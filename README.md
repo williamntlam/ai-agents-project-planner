@@ -3,6 +3,8 @@
 
 Automatically generate detailed project plans (timelines, tasks, dependencies, resources, milestones) from natural language descriptions using AI agents.
 
+Could potentially try to use LLMs local to my computer.
+
 ---
 
 ## ✅ Phase 1: Research & Planning (Week 1)
