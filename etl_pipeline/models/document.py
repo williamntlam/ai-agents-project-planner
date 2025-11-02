@@ -1,0 +1,2 @@
+# Document Pydantic schema
+

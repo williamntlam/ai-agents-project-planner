@@ -1,0 +1,2 @@
+# Chunk Pydantic schema
+
