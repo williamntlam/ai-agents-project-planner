@@ -57,3 +57,12 @@ class Document(BaseModel):
             }
         }
     )
+
+    def get_content_length(self) -> int:
+        """Get character count of content."""
+        return len(self.content)
+
+    def has_tag(self, tag: str) -> bool:
+        """Check if document has a specific tag."""
+        tags = self.metadata.get("tags", [])
+        return tag.lower() in [t.lower() for t in tags]
