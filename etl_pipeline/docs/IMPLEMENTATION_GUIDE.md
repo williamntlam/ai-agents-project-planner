@@ -12,31 +12,38 @@ Start by defining your dependencies. Here's a suggested starter:
 
 ```txt
 # Core dependencies
-pydantic>=2.0.0
-pyyaml>=6.0.0
+pydantic>=2.0.0      # Data validation & models (Document, Chunk schemas)
+pyyaml>=6.0.0        # Load YAML config files (base.yaml, local.yaml, prod.yaml)
 
 # Database
-psycopg2-binary>=2.9.0
-pgvector>=0.3.0
-sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0  # PostgreSQL adapter (connects Python to pgvector database)
+pgvector>=0.3.0         # PostgreSQL extension client (stores & queries vectors)
+sqlalchemy>=2.0.0       # ORM/database toolkit (optional, for cleaner DB code)
 
 # Document processing
-pypdf>=3.0.0
-markdown>=3.4.0
-python-docx>=1.0.0
+pypdf>=3.0.0           # Extract text from PDF files
+markdown>=3.4.0        # Parse & process Markdown files (.md files)
+python-docx>=1.0.0     # Extract text from Word documents (.docx files)
 
 # Text processing & embeddings
-langchain>=0.1.0
-langchain-community>=0.0.20
-sentence-transformers>=2.2.0
-# OR openai>=1.0.0 (if using OpenAI embeddings)
+langchain>=0.1.0           # Text splitting utilities, document loaders
+langchain-community>=0.0.20  # Additional LangChain integrations
+langchain-text-splitters>=0.0.1  # Advanced text splitters (semantic chunking, recursive)
+sentence-transformers>=2.2.0  # Local embedding models (free, runs on CPU/GPU)
+# OR openai>=1.0.0 (if using OpenAI embeddings)  # OpenAI API for embeddings (paid)
+
+# Chunking & Retrieval
+tiktoken>=0.5.0  # Token counting for precise chunk sizing
+sentence-transformers[torch]>=2.2.0  # For semantic chunking (optional)
+# For client-side similarity search (alternative to pgvector queries)
+# faiss-cpu>=1.7.4  # OR faiss-gpu (if you have GPU support)
 
 # Utilities
-python-dotenv>=1.0.0
-tenacity>=8.2.0  # for retry logic
+python-dotenv>=1.0.0  # Load .env file (database passwords, API keys)
+tenacity>=8.2.0       # Retry decorators (automatic retries for API calls)
 
 # CLI
-click>=8.1.0  # or argparse
+click>=8.1.0  # Command-line interface framework (better than argparse)
 ```
 
 ### 1.2 Environment Setup
@@ -177,14 +184,42 @@ loaders:
 **Purpose:** Split documents into semantic chunks
 
 **Features:**
-- Text splitting with overlap
-- Respect paragraph/section boundaries
-- Handle code blocks intelligently
+- Text splitting with overlap (prevent information loss at boundaries)
+- Respect paragraph/section boundaries (don't split mid-sentence)
+- Handle code blocks intelligently (keep code blocks together)
+- Token-aware chunking (using `tiktoken` for precise sizing)
+- Semantic chunking (optional - group semantically similar sentences)
 
-**Options:**
-- LangChain's text splitters
-- Custom semantic chunking
-- Recursive character splitting
+**Chunking Strategies:**
+
+1. **Recursive Character Splitter** (LangChain)
+   ```python
+   from langchain_text_splitters import RecursiveCharacterTextSplitter
+   # Respects text structure, good default
+   ```
+
+2. **Semantic Chunking** (Advanced)
+   ```python
+   # Groups sentences by semantic similarity
+   # Better for preserving context
+   ```
+
+3. **Markdown Header Splitter** (LangChain)
+   ```python
+   from langchain_text_splitters import MarkdownHeaderTextSplitter
+   # Splits by markdown headers - preserves document structure
+   ```
+
+4. **Token-based Chunking**
+   ```python
+   import tiktoken
+   # Precise chunk sizing based on token count (important for embeddings)
+   ```
+
+**Best Practices:**
+- Use overlap (10-20% of chunk size) to prevent context loss
+- Match chunk size to embedding model's context window
+- Consider document type: code vs prose need different strategies
 
 ### 7.3 Metadata Enricher
 **Implement:** `transformers/metadata_enricher.py`
@@ -247,6 +282,67 @@ CREATE INDEX ON document_chunks USING ivfflat (embedding vector_cosine_ops);
 - Store timestamps, source paths
 - Handle failures/successes
 - Support SQLite (dev) or PostgreSQL (prod)
+
+### 8.3 Retrieval Utilities (Best Match / Top-K Search)
+**Create:** `utils/retrieval.py` or add to `loaders/vector_loader.py`
+
+**Purpose:** Query pgvector to find top-K most similar chunks
+
+**Features:**
+- **Top-K Similarity Search** (e.g., "best match 25")
+  - Query embedding against pgvector
+  - Return top 25 most similar chunks by cosine similarity
+  - Support different similarity metrics (cosine, L2, inner product)
+
+**Example Implementation:**
+```python
+def get_best_matches(query_embedding: List[float], top_k: int = 25) -> List[Chunk]:
+    """
+    Find top-K most similar chunks using pgvector.
+    
+    Args:
+        query_embedding: Vector representation of the query
+        top_k: Number of results to return (default: 25)
+    
+    Returns:
+        List of Chunk objects sorted by similarity (best match first)
+    """
+    query = """
+        SELECT id, content, embedding, metadata
+        FROM document_chunks
+        ORDER BY embedding <=> %s::vector
+        LIMIT %s
+    """
+    # Execute query and return results
+```
+
+**Advanced Features:**
+- **Metadata Filtering**: Filter by document type, source, tags before similarity search
+- **Hybrid Search**: Combine semantic similarity + keyword matching
+- **Reranking**: Optional reranking of top results using cross-encoders
+- **Query Expansion**: Expand query with related terms before embedding
+
+**SQL Example for Best Match 25:**
+```sql
+-- pgvector similarity search (cosine similarity)
+SELECT 
+    id,
+    content,
+    metadata,
+    1 - (embedding <=> %s::vector) as similarity_score
+FROM document_chunks
+WHERE metadata->>'document_type' = 'standards'  -- Optional filtering
+ORDER BY embedding <=> %s::vector
+LIMIT 25;
+```
+
+**Usage in Agent App:**
+```python
+# Query: "What are the security standards?"
+query_embedding = embedder.embed("What are the security standards?")
+best_matches = vector_loader.get_best_matches(query_embedding, top_k=25)
+# Returns 25 most relevant chunks for RAG context
+```
 
 ---
 
