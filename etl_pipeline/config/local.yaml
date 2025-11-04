@@ -1,2 +1,56 @@
 # Local development configuration
+# Extends base.yaml with development-specific overrides
 
+# Extractor overrides for local dev
+extractors:
+  filesystem:
+    base_path: "./test_data"  # Local test data directory
+    max_file_size_mb: 10  # Smaller for testing
+  
+  github:
+    enabled: false  # Disable GitHub for local dev
+  
+  s3:
+    enabled: false  # Disable S3 for local dev
+
+# Transformer overrides for local dev
+transformers:
+  chunker:
+    chunk_size: 500  # Smaller chunks for testing
+    chunk_overlap: 100
+  
+  embedder:
+    provider: "openai"
+    model: "text-embedding-3-small"  # Use smaller/cheaper model for dev
+    batch_size: 10  # Smaller batches for testing
+    max_retries: 2  # Fewer retries for faster failures
+
+# Loader overrides for local dev
+loaders:
+  vector_db:
+    connection_string: "postgresql://postgres:postgres@localhost:5432/vector_db_test"
+    batch_size: 50  # Smaller batches
+    create_index: true
+  
+  audit:
+    connection_string: "postgresql://postgres:postgres@localhost:5432/vector_db_test"
+    # Or use SQLite for local dev:
+    # type: "sqlite"
+    # db_path: "./logs/audit_local.db"
+
+# Pipeline overrides
+pipeline:
+  incremental: false  # Re-process all files in local dev
+  continue_on_error: true
+
+# Logging overrides
+logging:
+  level: "DEBUG"  # More verbose in dev
+  log_file: "./logs/etl_pipeline_local.log"
+
+# Retry overrides
+retry:
+  connection:
+    max_attempts: 3  # Fewer retries in dev
+  api_call:
+    max_attempts: 2

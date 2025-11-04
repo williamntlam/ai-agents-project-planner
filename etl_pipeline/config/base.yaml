@@ -1,2 +1,119 @@
-# Base configuration
+# Base configuration - shared settings across all environments
 
+# Extractor configurations
+extractors:
+  filesystem:
+    enabled: true
+    base_path: "./data/standards"  # Override in local/prod
+    extensions:
+      - ".md"
+      - ".pdf"
+      - ".txt"
+      - ".docx"
+    recursive: true
+    max_file_size_mb: 50
+  
+  github:
+    enabled: false
+    token: "${GITHUB_TOKEN}"  # From environment
+    repos: []
+    file_extensions:
+      - ".md"
+      - ".py"
+      - ".txt"
+  
+  s3:
+    enabled: false
+    bucket: "${S3_BUCKET}"
+    prefix: ""
+    access_key_id: "${AWS_ACCESS_KEY_ID}"
+    secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+    region: "${AWS_REGION}"
+
+# Transformer configurations
+transformers:
+  normalizer:
+    enabled: true
+    preserve_formatting: false
+    extract_metadata: true
+  
+  chunker:
+    enabled: true
+    strategy: "recursive_character"  # recursive_character, semantic, markdown
+    chunk_size: 1000  # Characters (or tokens if use_tokens: true)
+    chunk_overlap: 200  # Characters (or tokens)
+    use_tokens: false  # If true, chunk_size/chunk_overlap are in tokens
+    respect_sentence_boundaries: true
+    separators:
+      - "\n\n"
+      - "\n"
+      - ". "
+      - " "
+      - ""
+  
+  embedder:
+    enabled: true
+    provider: "openai"  # openai or sentence-transformers
+    model: "text-embedding-3-small"  # OpenAI model name
+    dimension: 1536  # text-embedding-3-small = 1536, text-embedding-3-large = 3072
+    batch_size: 100  # Batch size for embeddings
+    api_key: "${OPENAI_API_KEY}"  # From environment
+    max_retries: 3
+    timeout_seconds: 30
+    # For sentence-transformers (if you switch):
+    # model: "sentence-transformers/all-MiniLM-L6-v2"
+    # device: "cpu"  # or "cuda"
+  
+  metadata_enricher:
+    enabled: true
+    extract_title: true
+    extract_tags: true
+    extract_category: true
+    auto_detect_language: true
+
+# Loader configurations
+loaders:
+  vector_db:
+    enabled: true
+    type: "pgvector"
+    connection_string: "${DATABASE_URL}"
+    table_name: "document_chunks"
+    batch_size: 100
+    upsert_mode: true  # Insert or update if exists
+    create_index: true
+    index_type: "ivfflat"  # ivfflat or hnsw
+    ivfflat_lists: 100  # For IVFFlat index
+    embedding_dimension: 1536  # Must match embedder dimension!
+  
+  audit:
+    enabled: true
+    type: "postgresql"  # postgresql, sqlite, or jsonl
+    connection_string: "${DATABASE_URL}"
+    table_name: "etl_audit_log"
+    # For SQLite:
+    # db_path: "./logs/audit.db"
+    # For JSONL:
+    # log_file: "./logs/audit.jsonl"
+
+# Pipeline settings
+pipeline:
+  incremental: true  # Only process new/changed files
+  parallel_processing: false
+  max_workers: 4  # If parallel_processing: true
+  continue_on_error: true  # Continue processing other documents if one fails
+  
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_file: "./logs/etl_pipeline.log"
+  structured: true  # Use structured JSON logging
+
+# Retry settings
+retry:
+  connection:
+    max_attempts: 5
+    wait_seconds: 2.0
+  
+  api_call:
+    max_attempts: 3
+    wait_seconds: 1.0

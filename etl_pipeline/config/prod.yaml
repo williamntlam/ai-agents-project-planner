@@ -1,2 +1,73 @@
 # Production configuration
+# Extends base.yaml with production-specific overrides
 
+# Extractor overrides for production
+extractors:
+  filesystem:
+    base_path: "/data/production/standards"  # Production data path
+    max_file_size_mb: 100  # Larger files in production
+  
+  github:
+    enabled: true  # Enable GitHub extractor in prod
+    # token loaded from ${GITHUB_TOKEN}
+  
+  s3:
+    enabled: true  # Enable S3 extractor in prod
+    # Credentials loaded from environment variables
+
+# Transformer overrides for production
+transformers:
+  chunker:
+    chunk_size: 2000  # Larger chunks for production
+    chunk_overlap: 400
+    use_tokens: true  # Use token-based chunking for consistency
+  
+  embedder:
+    provider: "openai"
+    model: "text-embedding-3-large"  # Use better model in production
+    dimension: 3072  # text-embedding-3-large dimension
+    batch_size: 100  # Optimized batch size
+    max_retries: 5  # More retries for production
+  
+  metadata_enricher:
+    enabled: true
+    extract_title: true
+    extract_tags: true
+    extract_category: true
+
+# Loader overrides for production
+loaders:
+  vector_db:
+    connection_string: "${DATABASE_URL}"  # From environment
+    table_name: "document_chunks"
+    batch_size: 200  # Larger batches for performance
+    upsert_mode: true
+    create_index: true
+    index_type: "ivfflat"  # or "hnsw" for better quality
+    embedding_dimension: 3072  # Match embedder dimension!
+  
+  audit:
+    connection_string: "${DATABASE_URL}"
+    table_name: "etl_audit_log"
+
+# Pipeline overrides
+pipeline:
+  incremental: true  # Only process changes in production
+  parallel_processing: true  # Enable parallel processing
+  max_workers: 8  # More workers in production
+  continue_on_error: true
+
+# Logging overrides
+logging:
+  level: "INFO"  # Less verbose in production
+  log_file: "/var/log/etl_pipeline/etl_pipeline.log"
+  structured: true
+
+# Retry overrides
+retry:
+  connection:
+    max_attempts: 5
+    wait_seconds: 2.0
+  api_call:
+    max_attempts: 5  # More retries in production
+    wait_seconds: 2.0
