@@ -13,14 +13,7 @@ extractors:
     recursive: true
     max_file_size_mb: 50
   
-  github:
-    enabled: false
-    token: "${GITHUB_TOKEN}"  # From environment
-    repos: []
-    file_extensions:
-      - ".md"
-      - ".py"
-      - ".txt"
+  # GitHub extractor removed
 
 # Transformer configurations
 transformers:

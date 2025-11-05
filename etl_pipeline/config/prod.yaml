@@ -6,10 +6,6 @@ extractors:
   filesystem:
     base_path: "/data/production/standards"  # Production data path
     max_file_size_mb: 100  # Larger files in production
-  
-  github:
-    enabled: true  # Enable GitHub extractor in prod
-    # token loaded from ${GITHUB_TOKEN}
 
 # Transformer overrides for production
 transformers:

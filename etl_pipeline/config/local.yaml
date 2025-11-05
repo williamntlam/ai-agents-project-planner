@@ -6,9 +6,6 @@ extractors:
   filesystem:
     base_path: "./test_data"  # Local test data directory
     max_file_size_mb: 10  # Smaller for testing
-  
-  github:
-    enabled: false  # Disable GitHub for local dev
 
 # Transformer overrides for local dev
 transformers:
