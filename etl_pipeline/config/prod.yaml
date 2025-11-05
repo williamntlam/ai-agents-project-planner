@@ -10,10 +10,6 @@ extractors:
   github:
     enabled: true  # Enable GitHub extractor in prod
     # token loaded from ${GITHUB_TOKEN}
-  
-  s3:
-    enabled: true  # Enable S3 extractor in prod
-    # Credentials loaded from environment variables
 
 # Transformer overrides for production
 transformers:

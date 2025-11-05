@@ -9,9 +9,6 @@ extractors:
   
   github:
     enabled: false  # Disable GitHub for local dev
-  
-  s3:
-    enabled: false  # Disable S3 for local dev
 
 # Transformer overrides for local dev
 transformers:
