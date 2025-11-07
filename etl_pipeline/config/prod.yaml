@@ -20,6 +20,9 @@ transformers:
     dimension: 3072  # text-embedding-3-large dimension
     batch_size: 100  # Optimized batch size
     max_retries: 5  # More retries for production
+    parallel_processing: true  # Enable parallel processing in production
+    max_workers: 8  # More workers for production
+    cache_enabled: true  # Enable cache in production to save costs
   
   metadata_enricher:
     enabled: true

@@ -45,6 +45,9 @@ transformers:
     api_key: "${OPENAI_API_KEY}"  # From environment
     max_retries: 3
     timeout_seconds: 30
+    parallel_processing: false  # Enable parallel batch processing (faster but uses more resources)
+    max_workers: 5  # Number of parallel workers (if parallel_processing: true)
+    cache_enabled: false  # Enable embedding cache to avoid duplicate API calls
     # For sentence-transformers (if you switch):
     # model: "sentence-transformers/all-MiniLM-L6-v2"
     # device: "cpu"  # or "cuda"
