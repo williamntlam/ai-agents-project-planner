@@ -24,7 +24,7 @@ transformers:
   
   chunker:
     enabled: true
-    strategy: "recursive_character"  # recursive_character, semantic, markdown
+    strategy: "markdown"  # recursive_character, semantic, markdown
     chunk_size: 1000  # Characters (or tokens if use_tokens: true)
     chunk_overlap: 200  # Characters (or tokens)
     use_tokens: false  # If true, chunk_size/chunk_overlap are in tokens
