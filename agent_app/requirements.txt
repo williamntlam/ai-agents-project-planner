@@ -1,0 +1,41 @@
+# Core orchestration
+langgraph>=0.2.0          # Workflow orchestration (stateful graphs)
+langchain>=0.1.0          # LLM framework and tooling
+langchain-openai>=0.1.0  # OpenAI integration
+langchain-community>=0.0.20  # Additional LangChain integrations
+
+# LLM & Embeddings
+openai>=1.0.0             # OpenAI API client
+tiktoken>=0.5.0           # Token counting
+
+# Data validation & models
+pydantic>=2.0.0           # Data validation & models (DocumentState, Agent schemas)
+pyyaml>=6.0.0             # Load YAML config files
+
+# Database & RAG
+psycopg2-binary>=2.9.0    # PostgreSQL adapter (for vector DB queries)
+pgvector>=0.3.0          # PostgreSQL vector extension client
+sqlalchemy>=2.0.0        # ORM/database toolkit
+
+# Document processing
+markdown>=3.4.0           # Markdown parsing and rendering
+jsonschema>=4.0.0        # JSON Schema validation (for ReviewerAgent)
+
+# MCP (Model Context Protocol) tools
+# Note: MCP tools can be implemented as LangChain tools
+# or custom Python functions that query the vector database
+
+# Utilities
+python-dotenv>=1.0.0      # Load .env file (API keys, database credentials)
+tenacity>=8.2.0           # Retry decorators (automatic retries for API calls)
+structlog>=23.0.0         # Structured logging
+
+# CLI
+click>=8.1.0              # Command-line interface framework
+rich>=13.0.0              # Rich terminal output (progress bars, tables)
+
+# Diagram generation (optional)
+# mermaid>=0.1.0            # Mermaid diagram rendering (if needed)
+# Note: Mermaid is typically rendered client-side or via separate tools
+# Python mermaid libraries may not be necessary for this use case
+
