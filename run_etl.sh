@@ -61,8 +61,8 @@ check_prerequisites() {
     fi
     print_success "Docker is installed"
     
-    # Check Docker Compose
-    if ! command_exists docker-compose && ! docker compose version >/dev/null 2>&1; then
+    # Check Docker Compose (new format: docker compose)
+    if ! docker compose version >/dev/null 2>&1; then
         print_error "Docker Compose is not installed. Please install Docker Compose first."
         exit 1
     fi
@@ -126,19 +126,19 @@ start_database() {
     print_header "Starting Database"
     
     # Check if database is already running
-    if docker-compose ps "$DB_SERVICE" 2>/dev/null | grep -q "Up"; then
+    if docker compose ps "$DB_SERVICE" 2>/dev/null | grep -q "Up"; then
         print_info "Database is already running"
         return 0
     fi
     
     print_info "Starting PostgreSQL with pgvector..."
-    docker-compose up -d "$DB_SERVICE"
+    docker compose up -d "$DB_SERVICE"
     
     # Wait for database to be healthy
     print_info "Waiting for database to be ready (max ${MAX_WAIT_TIME}s)..."
     local count=0
     while [ $count -lt $MAX_WAIT_TIME ]; do
-        if docker-compose exec -T "$DB_SERVICE" pg_isready -U postgres >/dev/null 2>&1; then
+        if docker compose exec -T "$DB_SERVICE" pg_isready -U postgres >/dev/null 2>&1; then
             print_success "Database is ready!"
             return 0
         fi
@@ -151,7 +151,7 @@ start_database() {
     if [ $count -ge $MAX_WAIT_TIME ]; then
         print_error "Database failed to start within ${MAX_WAIT_TIME} seconds"
         print_info "Checking database logs..."
-        docker-compose logs --tail=20 "$DB_SERVICE"
+        docker compose logs --tail=20 "$DB_SERVICE"
         exit 1
     fi
 }
@@ -161,7 +161,7 @@ build_etl_image() {
     print_header "Building ETL Pipeline Image"
     
     print_info "Building Docker image for ETL pipeline..."
-    if docker-compose build "$ETL_SERVICE"; then
+    if docker compose build "$ETL_SERVICE"; then
         print_success "ETL pipeline image built successfully"
     else
         print_error "Failed to build ETL pipeline image"
@@ -185,7 +185,7 @@ run_etl_pipeline() {
     echo ""
     
     # Run the pipeline and capture exit code
-    if docker-compose run --rm "$ETL_SERVICE" python -m etl_pipeline.main --env "$ETL_ENV"; then
+    if docker compose run --rm "$ETL_SERVICE" python -m etl_pipeline.main --env "$ETL_ENV"; then
         echo ""
         print_success "ETL pipeline completed successfully!"
         return 0
@@ -203,8 +203,8 @@ show_results() {
     # Check database connection and count chunks
     print_info "Checking database for loaded chunks..."
     
-    if docker-compose exec -T "$DB_SERVICE" psql -U postgres -d vector_db -t -c "SELECT COUNT(*) FROM document_chunks;" 2>/dev/null | grep -q "[0-9]"; then
-        CHUNK_COUNT=$(docker-compose exec -T "$DB_SERVICE" psql -U postgres -d vector_db -t -c "SELECT COUNT(*) FROM document_chunks;" 2>/dev/null | tr -d ' ')
+    if docker compose exec -T "$DB_SERVICE" psql -U postgres -d vector_db -t -c "SELECT COUNT(*) FROM document_chunks;" 2>/dev/null | grep -q "[0-9]"; then
+        CHUNK_COUNT=$(docker compose exec -T "$DB_SERVICE" psql -U postgres -d vector_db -t -c "SELECT COUNT(*) FROM document_chunks;" 2>/dev/null | tr -d ' ')
         print_success "Loaded $CHUNK_COUNT chunk(s) into vector database"
     else
         print_warning "Could not retrieve chunk count from database"
@@ -213,7 +213,7 @@ show_results() {
     # Show recent logs
     echo ""
     print_info "Recent pipeline logs:"
-    docker-compose logs --tail=20 "$ETL_SERVICE" 2>/dev/null || print_warning "No logs available"
+    docker compose logs --tail=20 "$ETL_SERVICE" 2>/dev/null || print_warning "No logs available"
     
     echo ""
 }
@@ -224,7 +224,7 @@ cleanup() {
     if [ $exit_code -ne 0 ]; then
         echo ""
         print_error "Pipeline execution failed with exit code $exit_code"
-        print_info "Check logs with: docker-compose logs $ETL_SERVICE"
+        print_info "Check logs with: docker compose logs $ETL_SERVICE"
     fi
     exit $exit_code
 }
@@ -298,7 +298,7 @@ main() {
     
     if [ "$DRY_RUN" = true ]; then
         print_info "Running in DRY-RUN mode (no data will be loaded)"
-        docker-compose run --rm "$ETL_SERVICE" python -m etl_pipeline.main --env "$ETL_ENV" --dry-run
+        docker compose run --rm "$ETL_SERVICE" python -m etl_pipeline.main --env "$ETL_ENV" --dry-run
     else
         if run_etl_pipeline "$ETL_ENV"; then
             show_results
@@ -306,9 +306,9 @@ main() {
             print_success "ETL pipeline finished successfully!"
             echo ""
             print_info "Next steps:"
-            echo "  - View logs: docker-compose logs $ETL_SERVICE"
-            echo "  - Query database: docker-compose exec $DB_SERVICE psql -U postgres -d vector_db"
-            echo "  - Stop database: docker-compose stop $DB_SERVICE"
+            echo "  - View logs: docker compose logs $ETL_SERVICE"
+            echo "  - Query database: docker compose exec $DB_SERVICE psql -U postgres -d vector_db"
+            echo "  - Stop database: docker compose stop $DB_SERVICE"
         else
             print_error "Pipeline execution failed. Check logs for details."
             exit 1
