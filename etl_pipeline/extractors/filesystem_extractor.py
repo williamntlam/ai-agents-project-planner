@@ -3,9 +3,9 @@ from typing import Iterator, Set
 from datetime import datetime
 import os
 
-from models.document import RawDocument
-from extractors.base import BaseExtractor
-from utils.exceptions import ExtractionError
+from etl_pipeline.models.document import RawDocument
+from etl_pipeline.extractors.base import BaseExtractor
+from etl_pipeline.utils.exceptions import ExtractionError
 
 
 class FilesystemExtractor(BaseExtractor):

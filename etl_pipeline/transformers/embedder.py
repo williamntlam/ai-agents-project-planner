@@ -4,10 +4,10 @@ import time
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from transformers.base import BaseEmbedder
-from utils.exceptions import EmbeddingError
-from utils.retry import retry_api_call
-from utils.hashing import content_hash
+from etl_pipeline.transformers.base import BaseEmbedder
+from etl_pipeline.utils.exceptions import EmbeddingError
+from etl_pipeline.utils.retry import retry_api_call
+from etl_pipeline.utils.hashing import content_hash
 
 # OpenAI client
 try:

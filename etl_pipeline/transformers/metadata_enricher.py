@@ -3,10 +3,10 @@ from datetime import datetime
 from pathlib import Path
 import re
 
-from transformers.base import BaseMetadataEnricher
-from models.document import Document
-from models.chunk import Chunk
-from utils.exceptions import TransformationError
+from etl_pipeline.transformers.base import BaseMetadataEnricher
+from etl_pipeline.models.document import Document
+from etl_pipeline.models.chunk import Chunk
+from etl_pipeline.utils.exceptions import TransformationError
 
 # Optional language detection
 try:

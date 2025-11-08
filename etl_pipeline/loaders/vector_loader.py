@@ -12,10 +12,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import QueuePool
 
-from loaders.base import BaseVectorLoader
-from models.chunk import Chunk
-from utils.exceptions import LoadingError, ConnectionError, ConfigurationError, ValidationError
-from utils.retry import retry_connection
+from etl_pipeline.loaders.base import BaseVectorLoader
+from etl_pipeline.models.chunk import Chunk
+from etl_pipeline.utils.exceptions import LoadingError, ConnectionError, ConfigurationError, ValidationError
+from etl_pipeline.utils.retry import retry_connection
 
 logger = logging.getLogger(__name__)
 

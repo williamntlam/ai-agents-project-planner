@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
-from models.document import RawDocument, Document
-from models.chunk import Chunk
+from etl_pipeline.models.document import RawDocument, Document
+from etl_pipeline.models.chunk import Chunk
 
 
 class BaseTransformer(ABC):

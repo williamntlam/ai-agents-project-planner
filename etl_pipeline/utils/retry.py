@@ -10,7 +10,7 @@ from tenacity import (
     retry_if_result,
     RetryError
 )
-from utils.exceptions import ETLException, ConnectionError, EmbeddingError
+from etl_pipeline.utils.exceptions import ETLException, ConnectionError, EmbeddingError
 
 
 def retry_on_exception(

@@ -7,9 +7,6 @@ from typing import Optional
 import click
 from datetime import datetime
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from etl_pipeline.utils.config_loader import load_config, get_config_path
 from etl_pipeline.utils.logging import setup_logging
 from etl_pipeline.extractors.filesystem_extractor import FilesystemExtractor

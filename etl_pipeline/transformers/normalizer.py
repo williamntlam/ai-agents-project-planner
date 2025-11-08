@@ -4,9 +4,9 @@ from typing import Dict
 from datetime import datetime
 from pathlib import Path
 
-from transformers.base import BaseNormalizer
-from models.document import RawDocument, Document
-from utils.exceptions import TransformationError
+from etl_pipeline.transformers.base import BaseNormalizer
+from etl_pipeline.models.document import RawDocument, Document
+from etl_pipeline.utils.exceptions import TransformationError
 import re
 import textwrap
 

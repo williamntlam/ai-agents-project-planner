@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Iterator
-from models.document import RawDocument
+from etl_pipeline.models.document import RawDocument
 
 class BaseExtractor(ABC):
     """Abstract base class for all extractors (E in ETL)."""

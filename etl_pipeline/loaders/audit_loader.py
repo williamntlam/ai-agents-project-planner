@@ -13,9 +13,9 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import QueuePool, StaticPool
 
-from loaders.base import BaseAuditLoader
-from utils.exceptions import ConnectionError, ConfigurationError, LoadingError
-from utils.retry import retry_connection
+from etl_pipeline.loaders.base import BaseAuditLoader
+from etl_pipeline.utils.exceptions import ConnectionError, ConfigurationError, LoadingError
+from etl_pipeline.utils.retry import retry_connection
 
 logger = logging.getLogger(__name__)
 

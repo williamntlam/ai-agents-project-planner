@@ -5,10 +5,10 @@ import re
 from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 
-from models.chunk import Chunk
-from loaders.vector_loader import PgVectorLoader
-from transformers.embedder import Embedder
-from utils.exceptions import ValidationError
+from etl_pipeline.models.chunk import Chunk
+from etl_pipeline.loaders.vector_loader import PgVectorLoader
+from etl_pipeline.transformers.embedder import Embedder
+from etl_pipeline.utils.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 

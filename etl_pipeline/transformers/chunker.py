@@ -1,9 +1,9 @@
 from typing import List, Dict
 
-from transformers.base import BaseChunker
-from models.document import Document
-from models.chunk import Chunk
-from utils.exceptions import TransformationError
+from etl_pipeline.transformers.base import BaseChunker
+from etl_pipeline.models.document import Document
+from etl_pipeline.models.chunk import Chunk
+from etl_pipeline.utils.exceptions import TransformationError
 
 # LangChain text splitters
 try:

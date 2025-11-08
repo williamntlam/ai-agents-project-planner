@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from models.chunk import Chunk
-from models.document import Document
+from etl_pipeline.models.chunk import Chunk
+from etl_pipeline.models.document import Document
 
 
 class BaseLoader(ABC):
