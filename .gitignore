@@ -145,6 +145,5 @@ Thumbs.db
 # ETL Pipeline specific
 *.parquet
 *.csv.bak
-data/
 output/
 temp/
