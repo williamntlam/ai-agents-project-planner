@@ -20,9 +20,10 @@ COPY etl_pipeline/ ./etl_pipeline/
 # Create logs directory
 RUN mkdir -p /app/logs
 
-# Set Python path and unbuffered output
+# Set Python path (so imports work correctly)
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Default command for development
-CMD ["python", "-m", "etl_pipeline.main", "--env", "local", "--verbose"]
+# Default command (can be overridden)
+CMD ["python", "-m", "etl_pipeline.main", "--env", "local"]
+

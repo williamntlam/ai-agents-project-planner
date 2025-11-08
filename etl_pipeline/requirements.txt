@@ -6,17 +6,11 @@ pyyaml>=6.0.0
 psycopg2-binary>=2.9.0
 pgvector>=0.3.0
 sqlalchemy>=2.0.0
-# Optional: Connection pooling (recommended for production)
-psycopg2-pool>=2.0.0
 
 # Document processing
 pypdf>=3.0.0
 markdown>=3.4.0
 python-docx>=1.0.0
-
-# Cloud services (optional)
-boto3>=1.28.0  # For S3 extractor
-PyGithub>=1.59.0  # For GitHub extractor
 
 # Text processing & embeddings
 langchain>=0.1.0
@@ -26,8 +20,6 @@ openai>=1.0.0
 
 # Chunking & Retrieval
 tiktoken>=0.5.0
-# Optional: For client-side similarity search (alternative to pgvector)
-# faiss-cpu>=1.7.4
 
 # Utilities
 python-dotenv>=1.0.0
@@ -35,4 +27,19 @@ tenacity>=8.2.0
 
 # CLI
 click>=8.1.0
+
+# Optional dependencies (uncomment if needed)
+# =============================================================================
+# Alternative embedding provider (local, free, no API key needed)
+# sentence-transformers>=2.2.0
+
+# Language detection for metadata enrichment
+# langdetect>=1.0.9
+
+# Cloud services (for future extractors)
+# boto3>=1.28.0  # For S3 extractor
+# PyGithub>=1.59.0  # For GitHub extractor
+
+# Client-side similarity search (alternative to pgvector)
+# faiss-cpu>=1.7.4  # OR faiss-gpu (if you have GPU support)
 
