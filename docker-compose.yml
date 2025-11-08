@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}
       POSTGRES_DB: ${POSTGRES_DB:-vector_db}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -38,7 +38,7 @@ services:
     restart: "no"  # Don't auto-restart (run once)
     environment:
       # Database connection
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgvector:5432/${POSTGRES_DB:-vector_db}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}@pgvector:5432/${POSTGRES_DB:-vector_db}
       
       # OpenAI API key
       OPENAI_API_KEY: ${OPENAI_API_KEY}

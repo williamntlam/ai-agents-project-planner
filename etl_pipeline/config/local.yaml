@@ -22,14 +22,14 @@ transformers:
 # Loader overrides for local dev
 loaders:
   vector_db:
-    # Use DATABASE_URL from environment if available, otherwise fallback to localhost
-    connection_string: "${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/vector_db_test}"
+    # Use DATABASE_URL from environment (required)
+    connection_string: "${DATABASE_URL:?DATABASE_URL environment variable is required}"
     batch_size: 50  # Smaller batches
     create_index: true
   
   audit:
-    # Use DATABASE_URL from environment if available, otherwise fallback to localhost
-    connection_string: "${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/vector_db_test}"
+    # Use DATABASE_URL from environment (required)
+    connection_string: "${DATABASE_URL:?DATABASE_URL environment variable is required}"
     # Or use SQLite for local dev:
     # type: "sqlite"
     # db_path: "./logs/audit_local.db"
