@@ -1142,6 +1142,892 @@ def test_system_architect_agent():
 
 ---
 
+## Phase 11: Evaluations (Evals)
+
+### 11.1 Why Evaluations Matter
+
+**Evaluations (evals) are critical for:**
+- **Quality Assurance**: Measure how well agents generate high-quality SDDs
+- **Continuous Improvement**: Track performance over time and identify regressions
+- **Prompt Engineering**: Test different prompts and configurations to find optimal settings
+- **Agent Comparison**: Compare different agent implementations or model versions
+- **Confidence Building**: Provide metrics that demonstrate system reliability
+- **Debugging**: Identify which agents or stages are failing and why
+
+**Types of Evaluations:**
+1. **Functional Evals**: Does the agent produce the expected output structure?
+2. **Quality Evals**: Is the content high-quality, accurate, and complete?
+3. **Correctness Evals**: Does the output follow standards and requirements?
+4. **End-to-End Evals**: Does the full workflow produce a valid, useful SDD?
+
+### 11.2 Eval Framework Setup
+
+**Dependencies to add:**
+```txt
+# Evaluation frameworks
+langsmith>=0.1.0          # LangSmith for eval tracking and monitoring
+pytest>=7.4.0             # Testing framework
+pytest-asyncio>=0.21.0    # Async test support
+pytest-cov>=4.1.0         # Coverage reporting
+
+# Quality metrics
+rouge-score>=0.1.2        # ROUGE scores for text quality
+nltk>=3.8.1               # NLP utilities for evaluation
+sentence-transformers>=2.2.0  # Semantic similarity (if not already included)
+```
+
+**Project structure:**
+```
+agent_app/
+├── evals/                 # Evaluation suite
+│   ├── __init__.py
+│   ├── base.py           # Base eval classes
+│   ├── functional/        # Functional evals
+│   │   ├── __init__.py
+│   │   ├── structure_eval.py
+│   │   ├── schema_eval.py
+│   │   └── completeness_eval.py
+│   ├── quality/          # Quality evals
+│   │   ├── __init__.py
+│   │   ├── coherence_eval.py
+│   │   ├── accuracy_eval.py
+│   │   └── standards_compliance_eval.py
+│   ├── end_to_end/       # Full workflow evals
+│   │   ├── __init__.py
+│   │   ├── workflow_eval.py
+│   │   └── revision_loop_eval.py
+│   ├── datasets/          # Test datasets
+│   │   ├── test_briefs.yaml
+│   │   └── golden_outputs/
+│   └── metrics/           # Custom metrics
+│       ├── __init__.py
+│       └── sdd_metrics.py
+└── tests/                 # Unit/integration tests (existing)
+```
+
+### 11.3 Base Eval Framework
+
+**Implement:** `evals/base.py`
+
+```python
+"""Base evaluation framework."""
+
+from abc import ABC, abstractmethod
+from typing import Dict, Any, List, Optional
+from agent_app.schemas.agent_output import AgentOutput
+from agent_app.schemas.document_state import DocumentState
+from agent_app.schemas.review_feedback import ReviewFeedback
+import json
+
+
+class BaseEval(ABC):
+    """Abstract base class for all evaluations."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize evaluator.
+        
+        Args:
+            config: Evaluation configuration
+        """
+        self.config = config or {}
+        self.name = self.__class__.__name__
+    
+    @abstractmethod
+    def evaluate(
+        self,
+        output: AgentOutput,
+        expected: Optional[Any] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluate agent output.
+        
+        Args:
+            output: Agent output to evaluate
+            expected: Expected output (for comparison)
+            context: Additional context (state, inputs, etc.)
+            
+        Returns:
+            Dictionary with:
+            - score: float (0.0 to 1.0)
+            - passed: bool
+            - details: Dict with specific metrics
+            - feedback: str (human-readable feedback)
+        """
+        pass
+    
+    def batch_evaluate(
+        self,
+        outputs: List[AgentOutput],
+        expected: Optional[List[Any]] = None,
+        contexts: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluate multiple outputs and return aggregate metrics.
+        
+        Returns:
+            Dictionary with:
+            - mean_score: float
+            - std_score: float
+            - pass_rate: float
+            - individual_results: List[Dict]
+        """
+        results = []
+        for i, output in enumerate(outputs):
+            exp = expected[i] if expected else None
+            ctx = contexts[i] if contexts else None
+            result = self.evaluate(output, exp, ctx)
+            results.append(result)
+        
+        scores = [r['score'] for r in results]
+        return {
+            'mean_score': sum(scores) / len(scores) if scores else 0.0,
+            'std_score': self._std_dev(scores),
+            'pass_rate': sum(1 for r in results if r['passed']) / len(results) if results else 0.0,
+            'individual_results': results
+        }
+    
+    def _std_dev(self, values: List[float]) -> float:
+        """Calculate standard deviation."""
+        if not values:
+            return 0.0
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        return variance ** 0.5
+```
+
+### 11.4 Functional Evaluations
+
+**Purpose:** Verify agents produce structurally correct outputs.
+
+#### `evals/functional/structure_eval.py`
+
+```python
+"""Evaluate output structure and format."""
+
+from agent_app.evals.base import BaseEval
+from agent_app.schemas.agent_output import AgentOutput
+import re
+from typing import Dict, Any, Optional
+
+
+class StructureEval(BaseEval):
+    """Evaluate if output has correct structure (markdown, sections, etc.)."""
+    
+    def evaluate(
+        self,
+        output: AgentOutput,
+        expected: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Check output structure.
+        
+        Expected format:
+        {
+            "required_sections": ["Overview", "Architecture", "Components"],
+            "min_length": 500,
+            "max_length": 10000,
+            "require_markdown": True
+        }
+        """
+        content = output.content
+        expected = expected or {}
+        
+        checks = {
+            'has_content': len(content) > 0,
+            'min_length': len(content) >= expected.get('min_length', 100),
+            'max_length': len(content) <= expected.get('max_length', 50000),
+            'has_markdown': self._has_markdown(content) if expected.get('require_markdown', True) else True,
+            'has_required_sections': self._has_sections(content, expected.get('required_sections', []))
+        }
+        
+        score = sum(checks.values()) / len(checks)
+        passed = score >= 0.8  # 80% of checks must pass
+        
+        return {
+            'score': score,
+            'passed': passed,
+            'details': checks,
+            'feedback': self._generate_feedback(checks, content)
+        }
+    
+    def _has_markdown(self, content: str) -> bool:
+        """Check if content contains markdown formatting."""
+        markdown_patterns = [
+            r'^#+\s',  # Headers
+            r'\*\*.*?\*\*',  # Bold
+            r'\*.*?\*',  # Italic
+            r'```',  # Code blocks
+            r'\[.*?\]\(.*?\)'  # Links
+        ]
+        return any(re.search(pattern, content, re.MULTILINE) for pattern in markdown_patterns)
+    
+    def _has_sections(self, content: str, required_sections: List[str]) -> bool:
+        """Check if content contains required sections."""
+        if not required_sections:
+            return True
+        
+        content_lower = content.lower()
+        found = sum(1 for section in required_sections if section.lower() in content_lower)
+        return found >= len(required_sections) * 0.8  # 80% of sections must be present
+    
+    def _generate_feedback(self, checks: Dict[str, bool], content: str) -> str:
+        """Generate human-readable feedback."""
+        failed = [k for k, v in checks.items() if not v]
+        if not failed:
+            return "✓ Structure is correct"
+        return f"✗ Issues found: {', '.join(failed)}"
+```
+
+#### `evals/functional/schema_eval.py`
+
+```python
+"""Evaluate JSON Schema validation."""
+
+from agent_app.evals.base import BaseEval
+from agent_app.schemas.agent_output import AgentOutput
+from agent_app.utils.validation import validate_document_schema, extract_yaml_frontmatter
+from typing import Dict, Any, Optional
+
+
+class SchemaEval(BaseEval):
+    """Evaluate if output passes JSON Schema validation."""
+    
+    def __init__(self, schema: Dict[str, Any], config: Dict[str, Any] = None):
+        """
+        Initialize schema evaluator.
+        
+        Args:
+            schema: JSON Schema to validate against
+            config: Evaluation configuration
+        """
+        super().__init__(config)
+        self.schema = schema
+    
+    def evaluate(
+        self,
+        output: AgentOutput,
+        expected: Optional[Any] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Validate output against JSON Schema."""
+        content = output.content
+        
+        # Extract YAML frontmatter if present
+        frontmatter = extract_yaml_frontmatter(content)
+        
+        # Validate
+        is_valid, errors = validate_document_schema(content, self.schema)
+        
+        score = 1.0 if is_valid else max(0.0, 1.0 - (len(errors) * 0.2))  # Penalize per error
+        passed = is_valid
+        
+        return {
+            'score': score,
+            'passed': passed,
+            'details': {
+                'is_valid': is_valid,
+                'errors': errors,
+                'frontmatter_present': bool(frontmatter)
+            },
+            'feedback': f"{'✓' if passed else '✗'} Schema validation: {len(errors)} errors"
+        }
+```
+
+#### `evals/functional/completeness_eval.py`
+
+```python
+"""Evaluate output completeness."""
+
+from agent_app.evals.base import BaseEval
+from agent_app.schemas.agent_output import AgentOutput
+from typing import Dict, Any, Optional, List
+import re
+
+
+class CompletenessEval(BaseEval):
+    """Evaluate if output is complete (all required elements present)."""
+    
+    def evaluate(
+        self,
+        output: AgentOutput,
+        expected: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Check completeness.
+        
+        Expected format:
+        {
+            "required_elements": {
+                "sections": ["Architecture", "Components"],
+                "diagrams": ["architecture", "data_flow"],
+                "tables": 1,
+                "code_examples": 0
+            }
+        }
+        """
+        content = output.content
+        expected = expected or {}
+        required = expected.get('required_elements', {})
+        
+        checks = {
+            'sections': self._check_sections(content, required.get('sections', [])),
+            'diagrams': self._check_diagrams(content, required.get('diagrams', [])),
+            'tables': self._check_tables(content, required.get('tables', 0)),
+            'code_examples': self._check_code_blocks(content, required.get('code_examples', 0))
+        }
+        
+        # Calculate score (weighted average)
+        weights = {'sections': 0.4, 'diagrams': 0.3, 'tables': 0.2, 'code_examples': 0.1}
+        score = sum(checks[k] * weights.get(k, 0.25) for k in checks)
+        passed = score >= 0.8
+        
+        return {
+            'score': score,
+            'passed': passed,
+            'details': checks,
+            'feedback': f"Completeness: {score:.1%}"
+        }
+    
+    def _check_sections(self, content: str, required: List[str]) -> float:
+        """Check if required sections are present."""
+        if not required:
+            return 1.0
+        content_lower = content.lower()
+        found = sum(1 for section in required if section.lower() in content_lower)
+        return found / len(required)
+    
+    def _check_diagrams(self, content: str, required: List[str]) -> float:
+        """Check if required diagrams are present."""
+        if not required:
+            return 1.0
+        # Look for mermaid code blocks or diagram references
+        mermaid_blocks = len(re.findall(r'```mermaid', content, re.IGNORECASE))
+        diagram_refs = sum(1 for d in required if d.lower() in content.lower())
+        return min(1.0, (mermaid_blocks + diagram_refs) / len(required))
+    
+    def _check_tables(self, content: str, min_count: int) -> float:
+        """Check if minimum number of tables present."""
+        table_count = len(re.findall(r'\|.*\|', content))
+        if min_count == 0:
+            return 1.0
+        return min(1.0, table_count / min_count)
+    
+    def _check_code_blocks(self, content: str, min_count: int) -> float:
+        """Check if minimum number of code blocks present."""
+        code_blocks = len(re.findall(r'```', content)) // 2  # Each block has opening and closing
+        if min_count == 0:
+            return 1.0
+        return min(1.0, code_blocks / min_count)
+```
+
+### 11.5 Quality Evaluations
+
+**Purpose:** Measure content quality, accuracy, and adherence to standards.
+
+#### `evals/quality/coherence_eval.py`
+
+```python
+"""Evaluate content coherence and quality."""
+
+from agent_app.evals.base import BaseEval
+from agent_app.schemas.agent_output import AgentOutput
+from typing import Dict, Any, Optional, List
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+
+class CoherenceEval(BaseEval):
+    """Evaluate content coherence using semantic similarity."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__(config)
+        # Load embedding model for semantic similarity
+        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    def evaluate(
+        self,
+        output: AgentOutput,
+        expected: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluate coherence by:
+        1. Semantic similarity between sections
+        2. Consistency of terminology
+        3. Logical flow
+        """
+        content = output.content
+        
+        # Split into sections (by headers)
+        sections = self._extract_sections(content)
+        
+        if len(sections) < 2:
+            return {
+                'score': 0.5,
+                'passed': False,
+                'details': {'reason': 'Not enough sections to evaluate coherence'},
+                'feedback': 'Content too short for coherence evaluation'
+            }
+        
+        # Calculate semantic similarity between adjacent sections
+        similarities = []
+        for i in range(len(sections) - 1):
+            emb1 = self.embedder.encode(sections[i])
+            emb2 = self.embedder.encode(sections[i + 1])
+            similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
+            similarities.append(similarity)
+        
+        mean_similarity = np.mean(similarities)
+        # Good coherence: similarity between 0.3-0.7 (related but distinct)
+        score = 1.0 - abs(mean_similarity - 0.5) * 2  # Penalize if too similar or too different
+        
+        return {
+            'score': max(0.0, min(1.0, score)),
+            'passed': score >= 0.6,
+            'details': {
+                'mean_similarity': float(mean_similarity),
+                'section_count': len(sections)
+            },
+            'feedback': f"Coherence score: {score:.2f} (similarity: {mean_similarity:.2f})"
+        }
+    
+    def _extract_sections(self, content: str) -> List[str]:
+        """Extract sections from markdown content."""
+        import re
+        # Split by headers (## or ###)
+        sections = re.split(r'^##+\s', content, flags=re.MULTILINE)
+        return [s.strip() for s in sections if s.strip() and len(s.strip()) > 50]
+```
+
+#### `evals/quality/standards_compliance_eval.py`
+
+```python
+"""Evaluate adherence to standards."""
+
+from agent_app.evals.base import BaseEval
+from agent_app.schemas.agent_output import AgentOutput
+from agent_app.tools.rag_tool import RAGTool
+from typing import Dict, Any, Optional, List
+
+
+class StandardsComplianceEval(BaseEval):
+    """Evaluate if output adheres to organizational standards."""
+    
+    def __init__(self, rag_tool: RAGTool, config: Dict[str, Any] = None):
+        """
+        Initialize standards compliance evaluator.
+        
+        Args:
+            rag_tool: RAG tool to retrieve standards
+            config: Evaluation configuration
+        """
+        super().__init__(config)
+        self.rag_tool = rag_tool
+    
+    def evaluate(
+        self,
+        output: AgentOutput,
+        expected: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Check compliance by:
+        1. Retrieving relevant standards
+        2. Comparing output against standards
+        3. Identifying violations
+        """
+        content = output.content
+        project_brief = context.get('project_brief', '') if context else ''
+        
+        # Retrieve relevant standards
+        standards = self.rag_tool.retrieve_context(
+            query=f"Standards and guidelines for: {project_brief}",
+            top_k=10,
+            filters={"document_type": "standards"}
+        )
+        
+        if not standards:
+            return {
+                'score': 0.5,
+                'passed': False,
+                'details': {'reason': 'No standards found'},
+                'feedback': 'Could not retrieve standards for comparison'
+            }
+        
+        # Check compliance (simplified - would use LLM for actual comparison)
+        violations = []
+        compliance_score = 1.0
+        
+        # Example: Check for required patterns
+        required_patterns = self._extract_required_patterns(standards)
+        for pattern in required_patterns:
+            if pattern.lower() not in content.lower():
+                violations.append(f"Missing required pattern: {pattern}")
+                compliance_score -= 0.1
+        
+        score = max(0.0, compliance_score)
+        passed = score >= 0.7
+        
+        return {
+            'score': score,
+            'passed': passed,
+            'details': {
+                'violations': violations,
+                'standards_checked': len(standards)
+            },
+            'feedback': f"Standards compliance: {score:.1%} ({len(violations)} violations)"
+        }
+    
+    def _extract_required_patterns(self, standards: List[Dict[str, Any]]) -> List[str]:
+        """Extract required patterns from standards (simplified)."""
+        # In practice, would use LLM to extract requirements
+        patterns = []
+        for std in standards:
+            content = std.get('content', '')
+            # Look for "must", "required", "shall" patterns
+            # This is simplified - real implementation would be more sophisticated
+            if 'must' in content.lower() or 'required' in content.lower():
+                patterns.append(std.get('metadata', {}).get('title', ''))
+        return patterns[:5]  # Limit to top 5
+```
+
+### 11.6 End-to-End Evaluations
+
+**Purpose:** Test the full workflow with realistic scenarios.
+
+#### `evals/end_to_end/workflow_eval.py`
+
+```python
+"""End-to-end workflow evaluation."""
+
+from agent_app.evals.base import BaseEval
+from agent_app.schemas.document_state import DocumentState
+from agent_app.orchestration.graph import create_workflow_graph
+from typing import Dict, Any, List, Optional
+import json
+
+
+class WorkflowEval(BaseEval):
+    """Evaluate the complete workflow from brief to final document."""
+    
+    def __init__(self, agents: Dict, config: Dict[str, Any] = None):
+        """
+        Initialize workflow evaluator.
+        
+        Args:
+            agents: Dictionary of initialized agents
+            config: Evaluation configuration
+        """
+        super().__init__(config)
+        self.agents = agents
+        self.workflow = create_workflow_graph(agents, config)
+    
+    def evaluate(
+        self,
+        project_brief: str,
+        expected_output: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Run full workflow and evaluate result.
+        
+        Args:
+            project_brief: Input project brief
+            expected_output: Expected output characteristics
+            
+        Returns:
+            Evaluation results
+        """
+        # Initialize state
+        initial_state = DocumentState(project_brief=project_brief)
+        graph_state = {'state': initial_state}
+        
+        # Run workflow
+        try:
+            final_state = self.workflow.invoke(graph_state)
+            document_state = final_state['state']
+        except Exception as e:
+            return {
+                'score': 0.0,
+                'passed': False,
+                'details': {'error': str(e)},
+                'feedback': f'Workflow failed: {str(e)}'
+            }
+        
+        # Evaluate final document
+        checks = {
+            'has_final_document': document_state.final_document is not None,
+            'document_complete': len(document_state.final_document or '') > 1000,
+            'no_critical_errors': document_state.revision_count < document_state.max_revisions,
+            'status_final': document_state.document_status.value == 'FINAL'
+        }
+        
+        score = sum(checks.values()) / len(checks)
+        passed = score >= 0.75
+        
+        return {
+            'score': score,
+            'passed': passed,
+            'details': {
+                **checks,
+                'revision_count': document_state.revision_count,
+                'document_length': len(document_state.final_document or ''),
+                'status': document_state.document_status.value
+            },
+            'feedback': f"Workflow {'passed' if passed else 'failed'}: {score:.1%}"
+        }
+```
+
+### 11.7 Eval Dataset and Test Suite
+
+**Create:** `evals/datasets/test_briefs.yaml`
+
+```yaml
+# Test dataset for evaluations
+test_cases:
+  - name: "ecommerce_microservice"
+    brief: "Build an e-commerce order processing microservice with payment integration, inventory management, and order tracking"
+    expected:
+      required_sections:
+        - "Architecture"
+        - "Components"
+        - "API Design"
+        - "Data Models"
+      min_length: 2000
+      required_patterns:
+        - "microservices"
+        - "API"
+        - "database"
+  
+  - name: "data_pipeline"
+    brief: "Design a real-time data processing pipeline for IoT sensor data with 1M events/second throughput"
+    expected:
+      required_sections:
+        - "Architecture"
+        - "Data Flow"
+        - "Scalability"
+      min_length: 1500
+      required_patterns:
+        - "streaming"
+        - "scalability"
+        - "throughput"
+  
+  - name: "api_gateway"
+    brief: "Create an API gateway for routing requests to multiple backend services with authentication and rate limiting"
+    expected:
+      required_sections:
+        - "Architecture"
+        - "Security"
+        - "Rate Limiting"
+      min_length: 1000
+      required_patterns:
+        - "authentication"
+        - "rate limiting"
+        - "routing"
+```
+
+**Create:** `evals/run_evals.py`
+
+```python
+"""Run evaluation suite."""
+
+import yaml
+from pathlib import Path
+from agent_app.evals.functional.structure_eval import StructureEval
+from agent_app.evals.functional.schema_eval import SchemaEval
+from agent_app.evals.quality.coherence_eval import CoherenceEval
+from agent_app.evals.end_to_end.workflow_eval import WorkflowEval
+from agent_app.agents.system_architect import SystemArchitectAgent
+from agent_app.schemas.agent_output import AgentOutput
+from agent_app.schemas.document_state import DocumentState
+import json
+
+
+def load_test_dataset(path: str = "evals/datasets/test_briefs.yaml"):
+    """Load test dataset."""
+    with open(path) as f:
+        return yaml.safe_load(f)
+
+
+def run_eval_suite(agents: Dict, tools: Dict, config: Dict):
+    """Run complete evaluation suite."""
+    
+    # Load test dataset
+    dataset = load_test_dataset()
+    test_cases = dataset['test_cases']
+    
+    # Initialize evaluators
+    structure_eval = StructureEval()
+    coherence_eval = CoherenceEval()
+    workflow_eval = WorkflowEval(agents, config)
+    
+    results = []
+    
+    for test_case in test_cases:
+        print(f"\n{'='*60}")
+        print(f"Testing: {test_case['name']}")
+        print(f"{'='*60}")
+        
+        # Test individual agents
+        state = DocumentState(project_brief=test_case['brief'])
+        
+        # Test SystemArchitectAgent
+        architect_agent = agents['system_architect']
+        architect_output = architect_agent.perform_action(state)
+        
+        structure_result = structure_eval.evaluate(
+            architect_output,
+            expected=test_case.get('expected', {})
+        )
+        
+        coherence_result = coherence_eval.evaluate(architect_output)
+        
+        # Test full workflow
+        workflow_result = workflow_eval.evaluate(
+            test_case['brief'],
+            expected_output=test_case.get('expected', {})
+        )
+        
+        # Aggregate results
+        test_result = {
+            'test_case': test_case['name'],
+            'structure': structure_result,
+            'coherence': coherence_result,
+            'workflow': workflow_result,
+            'overall_score': (
+                structure_result['score'] * 0.3 +
+                coherence_result['score'] * 0.3 +
+                workflow_result['score'] * 0.4
+            )
+        }
+        
+        results.append(test_result)
+        
+        # Print summary
+        print(f"Structure: {structure_result['score']:.2f} ({'✓' if structure_result['passed'] else '✗'})")
+        print(f"Coherence: {coherence_result['score']:.2f} ({'✓' if coherence_result['passed'] else '✗'})")
+        print(f"Workflow: {workflow_result['score']:.2f} ({'✓' if workflow_result['passed'] else '✗'})")
+        print(f"Overall: {test_result['overall_score']:.2f}")
+    
+    # Generate report
+    generate_report(results)
+    
+    return results
+
+
+def generate_report(results: List[Dict]):
+    """Generate evaluation report."""
+    print(f"\n{'='*60}")
+    print("EVALUATION REPORT")
+    print(f"{'='*60}")
+    
+    overall_scores = [r['overall_score'] for r in results]
+    mean_score = sum(overall_scores) / len(overall_scores) if overall_scores else 0.0
+    
+    print(f"\nMean Overall Score: {mean_score:.2f}")
+    print(f"Tests Passed: {sum(1 for r in results if r['overall_score'] >= 0.7)}/{len(results)}")
+    
+    # Save detailed report
+    report_path = Path("evals/reports/latest_report.json")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(report_path, 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    print(f"\nDetailed report saved to: {report_path}")
+
+
+if __name__ == '__main__':
+    # Initialize agents and tools (from main.py)
+    # Then run:
+    # results = run_eval_suite(agents, tools, config)
+    pass
+```
+
+### 11.8 Continuous Evaluation with LangSmith
+
+**LangSmith Integration:**
+
+```python
+"""LangSmith integration for continuous evaluation."""
+
+from langsmith import Client, traceable
+from agent_app.agents.base import BaseAgent
+from agent_app.schemas.agent_output import AgentOutput
+
+
+class LangSmithEval:
+    """LangSmith-based evaluation and monitoring."""
+    
+    def __init__(self, api_key: str = None):
+        self.client = Client(api_key=api_key)
+    
+    @traceable(name="agent_perform_action")
+    def trace_agent_execution(
+        self,
+        agent: BaseAgent,
+        state: DocumentState
+    ) -> AgentOutput:
+        """Trace agent execution in LangSmith."""
+        output = agent.perform_action(state)
+        
+        # Log to LangSmith
+        self.client.create_run(
+            name=agent.name,
+            run_type="chain",
+            inputs={"state": state.model_dump()},
+            outputs={"output": output.model_dump()},
+            metadata={
+                "agent": agent.name,
+                "confidence": output.confidence,
+                "sources_count": len(output.sources or [])
+            }
+        )
+        
+        return output
+    
+    def create_eval_dataset(self, test_cases: List[Dict]):
+        """Create LangSmith dataset from test cases."""
+        dataset = self.client.create_dataset("sdd_generation_evals")
+        
+        for test_case in test_cases:
+            self.client.create_example(
+                dataset_name="sdd_generation_evals",
+                inputs={"project_brief": test_case['brief']},
+                outputs={"expected": test_case.get('expected', {})}
+            )
+        
+        return dataset
+```
+
+### 11.9 Metrics Dashboard
+
+**Key Metrics to Track:**
+1. **Functional Metrics:**
+   - Structure compliance rate
+   - Schema validation pass rate
+   - Completeness score
+
+2. **Quality Metrics:**
+   - Average coherence score
+   - Standards compliance rate
+   - Accuracy (vs golden outputs)
+
+3. **Workflow Metrics:**
+   - Average revision count
+   - Workflow success rate
+   - Average processing time
+
+4. **Agent-Specific Metrics:**
+   - SystemArchitectAgent: HLD quality, pattern usage
+   - APIDataAgent: LLD completeness, schema correctness
+   - ReviewerAgent: Review accuracy, false positive rate
+   - WriterFormatterAgent: Formatting compliance
+
+---
+
 ## Quick Start Checklist
 
 - [ ] Phase 1: Set up `requirements.txt` and environment
@@ -1154,6 +2040,7 @@ def test_system_architect_agent():
 - [ ] Phase 8: Set up configuration files
 - [ ] Phase 9: Implement main entrypoint
 - [ ] Phase 10: Test with sample project brief
+- [ ] Phase 11: Set up evaluation framework and run evals
 
 ---
 
