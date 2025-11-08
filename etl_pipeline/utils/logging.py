@@ -116,5 +116,31 @@ def log_processed_document_event(logger: logging.Logger, document_id: str, sourc
     )
 
 
+def setup_logging(config: dict) -> logging.Logger:
+    """
+    Set up logging from configuration dictionary.
+    
+    Args:
+        config: Logging configuration dictionary with keys:
+            - level: Log level (DEBUG, INFO, WARNING, ERROR)
+            - log_file: Path to log file (optional)
+            - structured: Whether to use structured logging (optional)
+    
+    Returns:
+        Configured logger instance
+    """
+    log_level = config.get('level', 'INFO')
+    log_file = config.get('log_file')
+    structured = config.get('structured', False)
+    
+    logger = setup_logger(
+        name="etl_pipeline",
+        log_level=log_level,
+        log_file=log_file
+    )
+    
+    return logger
+
+
 # Default logger instance
 default_logger = setup_logger()

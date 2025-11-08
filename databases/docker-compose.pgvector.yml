@@ -4,6 +4,7 @@ services:
   pgvector:
     image: pgvector/pgvector:pg16
     container_name: pgvector
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -11,13 +12,33 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
+      # Named volume for persistence (survives container removal)
       - pgvector_data:/var/lib/postgresql/data
+      # Optional: Mount local directory for direct access (uncomment if needed)
+      # - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    # Persistence settings
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c max_connections=200
+      -c checkpoint_timeout=15min
+      -c wal_level=replica
+      -c max_wal_size=1GB
+      -c min_wal_size=80MB
 
 volumes:
+  # Named volume ensures data persists even if container is removed
+  # Data is stored in Docker's volume directory
+  # To backup: docker run --rm -v pgvector_data:/data -v $(pwd):/backup alpine tar czf /backup/pgvector_backup.tar.gz /data
+  # To restore: docker run --rm -v pgvector_data:/data -v $(pwd):/backup alpine tar xzf /backup/pgvector_backup.tar.gz -C /data
   pgvector_data:
+    driver: local
+    # Optional: Specify external volume name for easier management
+    # name: pgvector_data
 
