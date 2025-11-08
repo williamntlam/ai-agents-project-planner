@@ -1,0 +1,44 @@
+# Base configuration for Agent Application
+# This file contains default settings that can be overridden by environment-specific configs
+
+agents:
+  system_architect:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 4000
+    reasoning_mode: "react"
+  
+  api_data:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 4000
+  
+  reviewer:
+    model: "gpt-4"
+    temperature: 0.3  # Lower for more consistent reviews
+    validation_schema_path: "./schemas/sdd_schema.json"
+    rubric_path: "./config/rubric.yaml"
+    min_score_threshold: 0.7
+  
+  writer_formatter:
+    model: "gpt-4"
+    temperature: 0.5
+
+tools:
+  rag_tool:
+    top_k: 25
+    similarity_threshold: 0.7
+    enable_reranking: false
+  
+  mcp_tools:
+    db_connection_string: "${DATABASE_URL}"
+
+orchestration:
+  max_revisions: 3
+  enable_hitl: true
+  checkpoint_storage: "memory"  # or "file" for persistence
+
+logging:
+  level: "INFO"
+  format: "json"
+

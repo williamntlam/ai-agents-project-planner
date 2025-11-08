@@ -1,0 +1,47 @@
+# Production configuration
+# Extends base.yaml with production-specific overrides
+
+# Agent overrides for production
+agents:
+  system_architect:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 4000
+  
+  api_data:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 4000
+  
+  reviewer:
+    model: "gpt-4"
+    temperature: 0.3
+    min_score_threshold: 0.8  # Higher threshold for production
+  
+  writer_formatter:
+    model: "gpt-4"
+    temperature: 0.5
+
+# Tool overrides for production
+tools:
+  rag_tool:
+    top_k: 25
+    similarity_threshold: 0.7
+    enable_reranking: true  # Enable reranking for better results
+  
+  mcp_tools:
+    db_connection_string: "${DATABASE_URL}"
+    connection_pool_size: 10
+
+# Orchestration overrides
+orchestration:
+  max_revisions: 3
+  enable_hitl: true
+  checkpoint_storage: "file"  # Persist checkpoints in production
+  checkpoint_path: "./checkpoints"
+
+# Logging overrides
+logging:
+  level: "INFO"
+  format: "json"  # Structured JSON for log aggregation
+

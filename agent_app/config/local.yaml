@@ -1,0 +1,40 @@
+# Local development configuration
+# Extends base.yaml with development-specific overrides
+
+# Agent overrides for local dev
+agents:
+  system_architect:
+    model: "gpt-4"  # or "gpt-3.5-turbo" for faster/cheaper testing
+    temperature: 0.7
+    max_tokens: 2000  # Smaller for testing
+  
+  api_data:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 2000
+  
+  reviewer:
+    model: "gpt-4"
+    temperature: 0.3
+    min_score_threshold: 0.6  # Lower threshold for dev
+  
+  writer_formatter:
+    model: "gpt-4"
+    temperature: 0.5
+
+# Tool overrides for local dev
+tools:
+  rag_tool:
+    top_k: 15  # Fewer chunks for faster testing
+    similarity_threshold: 0.6
+
+# Orchestration overrides
+orchestration:
+  max_revisions: 2  # Fewer revisions for faster iteration
+  enable_hitl: false  # Disable HITL for automated testing
+
+# Logging overrides
+logging:
+  level: "DEBUG"  # More verbose in dev
+  format: "console"  # Human-readable format for local dev
+
