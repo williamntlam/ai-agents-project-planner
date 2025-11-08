@@ -4,7 +4,7 @@
 # Extractor overrides for local dev
 extractors:
   filesystem:
-    base_path: "./test_data"  # Local test data directory
+    base_path: "./data"  # Data directory in project root (parent of etl_pipeline)
     max_file_size_mb: 10  # Smaller for testing
 
 # Transformer overrides for local dev
@@ -22,12 +22,14 @@ transformers:
 # Loader overrides for local dev
 loaders:
   vector_db:
-    connection_string: "postgresql://postgres:postgres@localhost:5432/vector_db_test"
+    # Use DATABASE_URL from environment if available, otherwise fallback to localhost
+    connection_string: "${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/vector_db_test}"
     batch_size: 50  # Smaller batches
     create_index: true
   
   audit:
-    connection_string: "postgresql://postgres:postgres@localhost:5432/vector_db_test"
+    # Use DATABASE_URL from environment if available, otherwise fallback to localhost
+    connection_string: "${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/vector_db_test}"
     # Or use SQLite for local dev:
     # type: "sqlite"
     # db_path: "./logs/audit_local.db"

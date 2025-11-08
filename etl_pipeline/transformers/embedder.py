@@ -403,7 +403,7 @@ class Embedder(BaseEmbedder):
         embedded_chunks = []
         for chunk, embedding in zip(chunks, embeddings):
             # Create new chunk with embedding
-            from models.chunk import Chunk
+            from etl_pipeline.models.chunk import Chunk
             embedded_chunk = Chunk(
                 id=chunk.id,
                 document_id=chunk.document_id,

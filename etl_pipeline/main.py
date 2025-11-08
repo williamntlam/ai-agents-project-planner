@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Optional
 import click
-from datetime import datetime
+from datetime import datetime, UTC
 
 from etl_pipeline.utils.config_loader import load_config, get_config_path
 from etl_pipeline.utils.logging import setup_logging
@@ -84,7 +84,7 @@ class ETLPipeline:
         Returns:
             Dictionary with pipeline execution statistics
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         stats = {
             'start_time': start_time.isoformat(),
             'documents_processed': 0,
@@ -100,6 +100,12 @@ class ETLPipeline:
                 'continue_on_error': self.config.get('pipeline', {}).get('continue_on_error', True)
             }
         })
+        
+        # Connect to loaders
+        if self.vector_loader:
+            self.vector_loader.connect()
+        if self.audit_loader:
+            self.audit_loader.connect()
         
         try:
             # Extract phase
@@ -154,20 +160,33 @@ class ETLPipeline:
                         raise
             
             stats['success'] = True
-            end_time = datetime.utcnow()
+            end_time = datetime.now(UTC)
             stats['end_time'] = end_time.isoformat()
             stats['duration_seconds'] = (end_time - start_time).total_seconds()
             
             self.logger.info("ETL pipeline completed successfully", extra=stats)
             
         except Exception as e:
-            end_time = datetime.utcnow()
+            end_time = datetime.now(UTC)
             stats['end_time'] = end_time.isoformat()
             stats['duration_seconds'] = (end_time - start_time).total_seconds()
             stats['error'] = str(e)
             
             self.logger.error("ETL pipeline failed", exc_info=True, extra=stats)
             raise
+        
+        finally:
+            # Disconnect from loaders
+            if self.vector_loader:
+                try:
+                    self.vector_loader.disconnect()
+                except Exception as e:
+                    self.logger.warning(f"Error disconnecting vector loader: {e}")
+            if self.audit_loader:
+                try:
+                    self.audit_loader.disconnect()
+                except Exception as e:
+                    self.logger.warning(f"Error disconnecting audit loader: {e}")
         
         return stats
     
@@ -232,20 +251,37 @@ class ETLPipeline:
             'chunk_count': len(chunks)
         })
         
-        self.vector_loader.load(chunks)
+        self.vector_loader.load_chunks(chunks)
     
     def _audit(self, raw_doc: RawDocument, document: Document, chunk_count: int, success: bool):
         """Log processing to audit system."""
         if not self.audit_loader:
             return
         
-        self.audit_loader.log_processing(
-            document_id=str(document.id),
-            source=document.source,
-            chunk_count=chunk_count,
-            success=success,
-            metadata={'content_length': len(document.content)}
-        )
+        try:
+            # Log extraction
+            if raw_doc:
+                self.audit_loader.log_extraction(
+                    source_path=raw_doc.source,
+                    status='success' if success else 'failed'
+                )
+            
+            # Log transformation
+            if document:
+                self.audit_loader.log_transformation(
+                    document_id=str(document.id),
+                    chunks_created=chunk_count,
+                    status='success' if success else 'failed'
+                )
+            
+            # Log loading
+            self.audit_loader.log_loading(
+                chunks_loaded=chunk_count if success else 0,
+                status='success' if success else 'failed'
+            )
+        except Exception as e:
+            # Don't fail the pipeline if audit logging fails
+            self.logger.warning(f"Audit logging failed: {e}")
 
 
 @click.command()

@@ -5,7 +5,7 @@ import json
 import logging
 import sqlite3
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import psycopg2
@@ -309,7 +309,7 @@ class AuditLoader(BaseAuditLoader):
             "source_path": source_path,
             "status": status,
             "error_message": error,
-            "processed_at": datetime.utcnow().isoformat()
+            "processed_at": datetime.now(UTC).isoformat()
         }
         
         self._log_event(event_data)
@@ -340,7 +340,7 @@ class AuditLoader(BaseAuditLoader):
             "chunks_created": chunks_created,
             "status": status,
             "error_message": error,
-            "processed_at": datetime.utcnow().isoformat()
+            "processed_at": datetime.now(UTC).isoformat()
         }
         
         self._log_event(event_data)
@@ -368,7 +368,7 @@ class AuditLoader(BaseAuditLoader):
             "chunks_loaded": chunks_loaded,
             "status": status,
             "error_message": error,
-            "processed_at": datetime.utcnow().isoformat()
+            "processed_at": datetime.now(UTC).isoformat()
         }
         
         self._log_event(event_data)

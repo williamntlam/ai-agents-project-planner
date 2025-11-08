@@ -1,13 +1,14 @@
 """Vector database loader for pgvector - handles chunk storage and similarity search."""
 
 import os
+import json
 import logging
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, UTC
 
 import psycopg2
-from psycopg2.extras import execute_values
+from psycopg2.extras import execute_values, Json
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import QueuePool
@@ -351,10 +352,10 @@ class PgVectorLoader(BaseVectorLoader):
                         chunk.chunk_index,
                         chunk.content,
                         chunk.embedding,  # psycopg2 will convert list to vector
-                        chunk.metadata,
+                        Json(chunk.metadata),  # Convert dict to JSONB
                         chunk.content_hash,
                         chunk.created_at,
-                        datetime.utcnow()  # updated_at
+                        datetime.now(UTC)  # updated_at
                     ))
                 
                 # Upsert using ON CONFLICT
@@ -411,7 +412,7 @@ class PgVectorLoader(BaseVectorLoader):
                             chunk.chunk_index,
                             chunk.content,
                             chunk.embedding,
-                            chunk.metadata,
+                            Json(chunk.metadata),  # Convert dict to JSONB
                             chunk.content_hash,
                             chunk.created_at
                         ))

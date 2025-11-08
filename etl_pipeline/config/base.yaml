@@ -4,7 +4,7 @@
 extractors:
   filesystem:
     enabled: true
-    base_path: "./data/standards"  # Override in local/prod
+    base_path: "./data"  # Data directory in project root (includes system_design/ and standards/ subdirectories)
     extensions:
       - ".md"
       - ".pdf"

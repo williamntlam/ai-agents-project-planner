@@ -1,7 +1,7 @@
 # md/pdf → RawDocument normalizer
 
 from typing import Dict
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 from etl_pipeline.transformers.base import BaseNormalizer
@@ -47,7 +47,7 @@ class Normalizer(BaseNormalizer):
                 content_type=self._normalize_content_type_label(content_type),
                 metadata=enriched_metadata,
                 extracted_at=raw_document.extracted_at,
-                normalized_at=datetime.utcnow(),
+                normalized_at=datetime.now(UTC),
             )
         except Exception as e:
             raise TransformationError(

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, Optional, Any
 from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID, uuid4
@@ -11,7 +11,7 @@ class RawDocument(BaseModel):
     content: str = Field(..., description="Raw text content extracted from the file")
     content_type: str = Field(..., description="MIME type or file extension (e.g., 'text/markdown', '.pdf')")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Source-specific metadata (file size, last modified, etc.)")
-    extracted_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when document was extracted")
+    extracted_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Timestamp when document was extracted")
     
     model_config = ConfigDict(
         json_schema_extra={
@@ -38,7 +38,7 @@ class Document(BaseModel):
     content_type: str = Field(..., description="Document type after normalization")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Enriched metadata (tags, categories, etc.)")
     extracted_at: datetime = Field(..., description="Original extraction timestamp")
-    normalized_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when document was normalized")
+    normalized_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Timestamp when document was normalized")
     
     model_config = ConfigDict(
         json_schema_extra={

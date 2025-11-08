@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 def setup_logger(
@@ -66,7 +66,7 @@ def log_structured_data(logger: logging.Logger, level: str, message: str, **cont
         context: Additional context as keyword arguments
     """
     log_entry = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "message": message,
         **context
     }

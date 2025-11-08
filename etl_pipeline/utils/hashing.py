@@ -92,3 +92,17 @@ def generate_hash_for_normalized_content(content: str) -> str:
     """
     normalized = normalize_content_for_hashing(content)
     return generate_hash(normalized)
+
+
+def content_hash(content: str) -> str:
+    """
+    Generate hash of content for deduplication.
+    Alias for generate_hash() for backward compatibility.
+    
+    Args:
+        content: Content string to hash
+    
+    Returns:
+        Hexadecimal hash string
+    """
+    return generate_hash(content)

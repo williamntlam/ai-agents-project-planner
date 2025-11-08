@@ -87,7 +87,7 @@ class Chunker(BaseChunker):
                     document_id=str(document.id),
                     chunk_index=idx,
                     content=chunk_text.strip(),
-                    embedding=[],  # Will be filled by embedder
+                    embedding=None,  # Will be filled by embedder
                     metadata={
                         "source": document.source,
                         "content_type": document.content_type,

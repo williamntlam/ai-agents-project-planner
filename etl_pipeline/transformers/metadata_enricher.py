@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 import re
 
@@ -81,7 +81,7 @@ class MetadataEnricher(BaseMetadataEnricher):
                     enriched_metadata["language"] = language
             
             # Add processing timestamp
-            enriched_metadata["enriched_at"] = datetime.utcnow().isoformat()
+            enriched_metadata["enriched_at"] = datetime.now(UTC).isoformat()
             
             # Create enriched document
             enriched_document = Document(
@@ -138,7 +138,7 @@ class MetadataEnricher(BaseMetadataEnricher):
             })
             
             # Add processing timestamp
-            enriched_metadata["enriched_at"] = datetime.utcnow().isoformat()
+            enriched_metadata["enriched_at"] = datetime.now(UTC).isoformat()
             
             # Create enriched chunk
             enriched_chunk = Chunk(

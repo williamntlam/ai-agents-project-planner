@@ -26,7 +26,21 @@ class FilesystemExtractor(BaseExtractor):
         super().__init__(config)
         
         # Extract configuration
-        self.base_path = Path(config.get("base_path", "./data"))
+        base_path_str = config.get("base_path", "./data")
+        self.base_path = Path(base_path_str)
+        
+        # If path is relative, try to resolve it relative to project root
+        # Project root is parent of etl_pipeline directory
+        if not self.base_path.is_absolute():
+            # Try to find project root (parent of etl_pipeline)
+            current_file = Path(__file__).resolve()
+            etl_pipeline_dir = current_file.parent.parent  # Go up from extractors/ to etl_pipeline/
+            project_root = etl_pipeline_dir.parent  # Go up from etl_pipeline/ to project root
+            # Resolve path relative to project root
+            resolved_path = (project_root / self.base_path).resolve()
+            if resolved_path.exists():
+                self.base_path = resolved_path
+            # Otherwise, keep original path (will be resolved relative to current working directory)
         self.extensions: Set[str] = {
             ext.lower() for ext in config.get("extensions", [".md", ".txt"])
         }
