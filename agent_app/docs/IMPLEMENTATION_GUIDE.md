@@ -2070,6 +2070,152 @@ The agent app depends on the ETL pipeline:
 
 ---
 
+## Frontend Development Plans
+
+### Overview
+
+While the current implementation focuses on the backend (CLI-based), there are plans to develop a **web frontend using Angular** to provide a user-friendly interface for the SDD generation workflow.
+
+### Frontend Architecture
+
+**Technology Stack:**
+- **Framework:** Angular (TypeScript)
+- **State Management:** NgRx or Angular Services
+- **UI Components:** Angular Material or PrimeNG
+- **Real-time Updates:** WebSockets or Server-Sent Events (SSE)
+- **Markdown Rendering:** Marked.js or similar
+- **Diagram Rendering:** Mermaid.js for architecture diagrams
+
+**Planned Features:**
+1. **Project Brief Input Form**
+   - Rich text editor for project brief
+   - Structured requirements input (functional, non-functional, constraints)
+   - File upload for requirements JSON/YAML
+   - Additional context field
+
+2. **Workflow Progress Dashboard**
+   - Real-time workflow status visualization
+   - Agent execution progress (SystemArchitect → APIData → Reviewer → WriterFormatter)
+   - Revision loop indicators
+   - Estimated time remaining
+
+3. **Document Viewer/Editor**
+   - Live preview of generated SDD (HLD, LLD, Final)
+   - Markdown rendering with syntax highlighting
+   - Mermaid diagram visualization
+   - Side-by-side comparison (before/after revisions)
+   - Export options (Markdown, PDF, HTML)
+
+4. **Clarification Interface**
+   - Display agent clarification requests
+   - Input form for user responses
+   - Clarification history/Q&A log
+   - Context-aware suggestions
+
+5. **Review Feedback Display**
+   - Review score visualization
+   - Issues list with severity indicators
+   - Strengths and suggestions
+   - Revision decision interface (Approve/Request Changes)
+
+6. **Human-in-the-Loop (HITL) Checkpoint**
+   - Final approval interface
+   - Request changes with comments
+   - Document status management
+
+### Backend API Requirements
+
+To support the Angular frontend, the backend will need:
+
+**REST API Endpoints:**
+```python
+# Workflow Management
+POST   /api/workflows/start          # Start workflow with brief
+GET    /api/workflows/{id}           # Get workflow status
+GET    /api/workflows/{id}/state     # Get current DocumentState
+POST   /api/workflows/{id}/clarify   # Provide clarification answer
+POST   /api/workflows/{id}/approve   # HITL approval
+POST   /api/workflows/{id}/revise    # Request revision with context
+
+# Document Access
+GET    /api/workflows/{id}/document  # Get current document
+GET    /api/workflows/{id}/hld       # Get HLD draft
+GET    /api/workflows/{id}/lld       # Get LLD draft
+GET    /api/workflows/{id}/final     # Get final document
+
+# Review & Feedback
+GET    /api/workflows/{id}/feedback  # Get review feedback
+GET    /api/workflows/{id}/issues    # Get review issues
+
+# Real-time Updates
+WS     /ws/workflows/{id}            # WebSocket for live updates
+```
+
+**API Implementation Approach:**
+- Add FastAPI or Flask REST API layer on top of existing agent_app
+- Use existing CLI functions as service layer
+- WebSocket/SSE for real-time workflow progress
+- LangGraph checkpoints for HITL integration
+
+### Development Phases
+
+**Phase 1: Backend API Layer** (Current Focus)
+- Complete agent implementation
+- Add REST API wrapper
+- Implement WebSocket/SSE for real-time updates
+- Add workflow state persistence
+
+**Phase 2: Angular Frontend Foundation**
+- Set up Angular project structure
+- Implement authentication (if needed)
+- Create base components and routing
+- Set up state management
+
+**Phase 3: Core Features**
+- Project brief input form
+- Workflow progress dashboard
+- Document viewer
+- Basic clarification interface
+
+**Phase 4: Advanced Features**
+- Real-time updates via WebSocket
+- Review feedback visualization
+- HITL checkpoint interface
+- Document export functionality
+
+**Phase 5: Polish & Optimization**
+- UI/UX improvements
+- Performance optimization
+- Error handling and user feedback
+- Documentation and help system
+
+### Integration Points
+
+The Angular frontend will integrate with the backend through:
+
+1. **REST API:** Standard HTTP requests for workflow control
+2. **WebSocket/SSE:** Real-time workflow progress updates
+3. **LangGraph Checkpoints:** For HITL pause/resume functionality
+4. **State Synchronization:** Keep frontend state in sync with backend DocumentState
+
+### Benefits of Angular Frontend
+
+- **Better UX:** Visual workflow progress vs. CLI output
+- **Interactive Clarifications:** Real-time Q&A interface
+- **Document Preview:** Live preview of generated SDD
+- **Collaboration:** Multiple users can view/review documents
+- **Accessibility:** Web-based access from any device
+- **Professional Interface:** Polished UI for production use
+
+### Current Status
+
+**Backend:** ✅ In development (CLI-based, fully functional)
+**Frontend:** 📋 Planned (Angular implementation to follow)
+
+The backend is designed to be API-ready, making frontend integration straightforward once the core agent functionality is complete.
+
+---
+
 ## Next Steps After Basic Implementation
 
 - Add streaming responses for real-time feedback

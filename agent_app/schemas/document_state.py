@@ -68,6 +68,73 @@ class DocumentState(BaseModel):
     )
     """The starting point - the user's requirements that kick off the entire workflow."""
     
+    # Additional user input and clarifications
+    additional_context: Optional[str] = Field(
+        None,
+        description="Additional context, clarifications, or requirements provided by user"
+    )
+    """User-provided additional information or clarifications.
+    
+    Can be added:
+    - Initially with the brief
+    - During workflow execution (if clarification requested)
+    - During revision cycles
+    """
+    
+    user_clarifications: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of clarification requests and user responses"
+    )
+    """Stores clarification Q&A pairs.
+    
+    Format:
+    [
+        {
+            "question": "What authentication method should be used?",
+            "answer": "OAuth2 with JWT tokens",
+            "timestamp": "2024-01-01T12:00:00Z",
+            "agent": "SystemArchitectAgent"
+        }
+    ]
+    """
+    
+    clarification_requests: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Pending clarification requests from agents"
+    )
+    """Agents can request clarifications if information is missing.
+    
+    Format:
+    [
+        {
+            "question": "What is the expected traffic volume?",
+            "agent": "SystemArchitectAgent",
+            "stage": "draft_hld",
+            "priority": "high",
+            "timestamp": "2024-01-01T12:00:00Z"
+        }
+    ]
+    """
+    
+    # Structured input fields (optional, for better organization)
+    requirements: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Structured requirements (optional, can be extracted from brief)"
+    )
+    """Structured requirements breakdown.
+    
+    Example:
+    {
+        "functional_requirements": ["User authentication", "Order processing"],
+        "non_functional_requirements": {
+            "performance": "Handle 10k requests/second",
+            "scalability": "Horizontal scaling required"
+        },
+        "constraints": ["Must use PostgreSQL", "AWS only"],
+        "assumptions": ["Users have existing accounts"]
+    }
+    """
+    
     # ========== INTERMEDIATE OUTPUTS ==========
     hld_draft: Optional[str] = Field(
         None,
@@ -196,6 +263,35 @@ class DocumentState(BaseModel):
     def should_continue_revision(self) -> bool:
         """Determine if revision loop should continue."""
         return self.needs_revision and self.revision_count < self.max_revisions
+    
+    def has_pending_clarifications(self) -> bool:
+        """Check if there are pending clarification requests."""
+        return len(self.clarification_requests) > 0
+    
+    def add_clarification(self, question: str, answer: str, agent: str) -> None:
+        """Add a clarification Q&A pair."""
+        self.user_clarifications.append({
+            "question": question,
+            "answer": answer,
+            "agent": agent,
+            "timestamp": self.processing_metadata.get("current_timestamp", "")
+        })
+    
+    def get_combined_brief(self) -> str:
+        """Get combined brief with all additional context."""
+        parts = [self.project_brief]
+        
+        if self.additional_context:
+            parts.append(f"\n\nAdditional Context:\n{self.additional_context}")
+        
+        if self.user_clarifications:
+            clarifications = "\n".join([
+                f"Q: {c['question']}\nA: {c['answer']}"
+                for c in self.user_clarifications
+            ])
+            parts.append(f"\n\nClarifications:\n{clarifications}")
+        
+        return "\n".join(parts)
     
     class Config:
         """Pydantic configuration."""
