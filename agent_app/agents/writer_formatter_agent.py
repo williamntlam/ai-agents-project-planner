@@ -34,7 +34,7 @@ class WriterFormatterAgent(BaseAgent):
         """
         model = self.get_config_value('model', 'gpt-4o-mini')
         temperature = self.get_config_value('temperature', 0.5)
-        max_tokens = self.get_config_value('max_tokens', 4000)
+        max_tokens = self.get_config_value('max_tokens', 8000)  # Increased for more detailed output
         
         # Get API key from config or environment variable
         api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')
@@ -166,7 +166,7 @@ Style Guide:
 {style_guide if style_guide else "Use standard markdown formatting with clear sections and subsections."}
 
 Document Content:
-{content[:6000]}  # Limit content to avoid token limits
+{content[:12000]}  # Increased limit for more detailed content
 
 Tasks:
 1. Add YAML frontmatter at the beginning with:
@@ -273,7 +273,7 @@ You add appropriate YAML frontmatter and ensure markdown follows best practices.
             prompt = f"""Generate Mermaid diagrams for this System Design Document.
 
 Document Content:
-{content[:4000]}  # Limit content for diagram generation
+{content[:8000]}  # Increased limit for more detailed diagram generation
 
 Generate appropriate Mermaid diagrams:
 1. Architecture Diagram: Show component relationships and interactions

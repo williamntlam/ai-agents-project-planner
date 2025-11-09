@@ -32,7 +32,7 @@ class SystemArchitectAgent(BaseAgent):
         """
         model = self.get_config_value('model', 'gpt-4o-mini')
         temperature = self.get_config_value('temperature', 0.7)
-        max_tokens = self.get_config_value('max_tokens', 4000)
+        max_tokens = self.get_config_value('max_tokens', 8000)  # Increased for more detailed output
         
         # Get API key from config or environment variable
         api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')
@@ -192,7 +192,7 @@ Your Approach:
         Returns:
             Formatted prompt string
         """
-        prompt = f"""You are a senior system architect. Generate a High-Level Design (HLD) document.
+        prompt = f"""You are a senior system architect. Generate a comprehensive and detailed High-Level Design (HLD) document.
 
 Project Brief:
 {brief}
@@ -201,43 +201,82 @@ Project Brief:
 Relevant Architectural Patterns and Standards:
 {context if context else "No specific patterns retrieved. Use your knowledge of best practices."}
 
-Generate a comprehensive HLD including:
+Generate a comprehensive and DETAILED HLD with extensive depth in each section:
+
 1. System Overview
-   - High-level description of the system
-   - Key business objectives
-   - Scope and boundaries
+   - High-level description of the system (2-3 paragraphs with specific details)
+   - Key business objectives (list 5-7 specific objectives with explanations)
+   - Scope and boundaries (clearly define what's in scope and what's explicitly out of scope)
+   - System context diagram description (describe interactions with external systems)
+   - User personas (identify primary users: roles, responsibilities, goals)
+   - Detailed Use Cases (for each major feature/functionality):
+     * Use Case ID and Name
+     * Actor (who performs the use case)
+     * Preconditions (what must be true before the use case starts)
+     * Main Flow (step-by-step description of the primary scenario)
+     * Alternative Flows (other scenarios and variations)
+     * Postconditions (what is true after the use case completes)
+     * Business Rules (rules that apply to this use case)
+     * Success Criteria (how success is measured for this use case)
+   - Success criteria and KPIs (how will success be measured at system level?)
 
 2. Component Architecture
-   - Major components and their responsibilities
-   - Component interactions and dependencies
-   - Service boundaries (if applicable)
+   - Major components and their responsibilities (detailed description of each component, 3-5 sentences each)
+   - Component interactions and dependencies (detailed interaction patterns, data flow between components)
+   - Service boundaries (if applicable - clearly define microservice boundaries or module boundaries)
+   - Component communication patterns (synchronous vs asynchronous, protocols used)
+   - Interface contracts (high-level API contracts between components)
+   - Deployment architecture (how components are deployed, containerization strategy)
+   - Component diagrams (describe architecture in detail for diagram generation)
 
-3. Technology Stack (with rationale)
-   - Programming languages and frameworks
-   - Databases and data storage
-   - Message queues/event streaming (if applicable)
-   - Infrastructure and deployment tools
-   - Justify each choice based on requirements
+3. Technology Stack (with detailed rationale)
+   - Programming languages and frameworks (specific versions, why chosen, alternatives considered)
+   - Databases and data storage (specific database choice, schema approach, replication strategy)
+   - Message queues/event streaming (if applicable - specific technologies, patterns, use cases)
+   - Infrastructure and deployment tools (specific tools, CI/CD pipeline, container orchestration)
+   - Monitoring and observability tools (logging, metrics, tracing solutions)
+   - Security tools and libraries (authentication libraries, encryption tools)
+   - Justify each choice with specific requirements and trade-offs considered
+   - Include version numbers and specific technology names where applicable
 
 4. High-level Data Flow
-   - How data moves through the system
-   - Key data transformations
-   - Data storage locations
+   - Detailed data flow diagrams description (step-by-step flow for key operations)
+   - How data moves through the system (request/response flows, data transformation points)
+   - Key data transformations (what transformations occur, where, and why)
+   - Data storage locations (where different types of data are stored and why)
+   - Data lifecycle (creation, updates, archival, deletion policies)
+   - Data consistency patterns (eventual consistency, strong consistency, where applied)
+   - Caching layers and strategies (what's cached, where, TTL strategies)
 
 5. Scalability and Performance Considerations
-   - Expected load and scaling strategy
-   - Performance requirements
-   - Caching strategies (if applicable)
-   - Database scaling approach
+   - Expected load (specific numbers: requests per second, concurrent users, data volume)
+   - Scaling strategy (horizontal vs vertical, auto-scaling rules, scaling triggers)
+   - Performance requirements (specific SLAs: response times, throughput, availability targets)
+   - Caching strategies (detailed caching approach: what, where, when, invalidation)
+   - Database scaling approach (read replicas, sharding strategy, partitioning)
+   - Load balancing strategy (algorithm, health checks, failover)
+   - Performance bottlenecks and mitigation (identify potential bottlenecks and solutions)
+   - Capacity planning (resource requirements, growth projections)
 
 6. Security Considerations
-   - Authentication and authorization approach
-   - Data protection and encryption
-   - API security
-   - Compliance requirements (if mentioned)
+   - Authentication and authorization approach (detailed auth flow, token management, session handling)
+   - Data protection and encryption (encryption at rest and in transit, key management)
+   - API security (rate limiting, input validation, CORS, API keys)
+   - Compliance requirements (GDPR, HIPAA, PCI-DSS if applicable)
+   - Security monitoring and incident response (logging, alerting, response procedures)
+   - Access control model (RBAC, ABAC, or other - with detailed explanation)
+   - Security best practices implementation (OWASP top 10 mitigation, secure coding practices)
+
+7. Reliability and Fault Tolerance
+   - Error handling strategy (how errors are handled, retry logic, circuit breakers)
+   - Disaster recovery (backup strategies, RTO/RPO targets, recovery procedures)
+   - High availability design (redundancy, failover mechanisms, health checks)
+   - Monitoring and alerting (what's monitored, alert thresholds, escalation procedures)
 
 Format as structured markdown with clear sections and subsections.
-Be specific and actionable - this will be used to generate detailed low-level design.
+Be EXTREMELY specific and detailed - provide concrete examples, specific technologies, and actionable details.
+Each section should be comprehensive enough that a developer could understand the full system architecture.
+Aim for 2000-3000 words total with substantial detail in each section.
 """
         return prompt
     

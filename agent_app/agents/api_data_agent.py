@@ -34,7 +34,7 @@ class APIDataAgent(BaseAgent):
         """
         model = self.get_config_value('model', 'gpt-4o-mini')
         temperature = self.get_config_value('temperature', 0.7)
-        max_tokens = self.get_config_value('max_tokens', 4000)
+        max_tokens = self.get_config_value('max_tokens', 8000)  # Increased for more detailed output
         
         # Get API key from config or environment variable
         api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')
@@ -219,7 +219,7 @@ Your Approach:
         Returns:
             Formatted prompt string
         """
-        prompt = f"""You are a senior software architect. Generate a detailed Low-Level Design (LLD) document based on the provided High-Level Design.
+        prompt = f"""You are a senior software architect. Generate a comprehensive and extremely detailed Low-Level Design (LLD) document based on the provided High-Level Design.
 
 High-Level Design:
 {hld_draft}
@@ -231,51 +231,164 @@ Database Schema Standards and Best Practices:
 API Design Patterns and Data Modeling Guidelines:
 {api_context if api_context else "No specific API patterns retrieved. Use your knowledge of RESTful API design and data modeling best practices."}
 
-Generate a comprehensive LLD including:
+Generate a comprehensive and DETAILED LLD with extensive depth:
 
-1. API Endpoint Specifications
-   - List all API endpoints with HTTP methods (GET, POST, PUT, DELETE, PATCH)
-   - Request/response schemas (JSON examples)
-   - Authentication and authorization requirements
-   - Query parameters, path parameters, request bodies
-   - Error response formats
-   - Rate limiting and throttling considerations
+1. Use Cases to API Mapping
+   For each use case identified in the HLD, map it to specific API endpoints:
+   - Use Case ID and Name
+   - Primary API endpoints that support this use case
+   - API sequence (step-by-step API calls to complete the use case)
+   - Alternative API flows for different scenarios
+   - Error handling APIs for failure cases
+   - Create a clear traceability matrix showing: Use Case → API Endpoints → Business Value
 
-2. Data Models
-   - Entity-relationship diagrams (describe in text/markdown)
-   - Database tables with columns, data types, constraints
-   - Primary keys, foreign keys, indexes
-   - Relationships between entities (one-to-one, one-to-many, many-to-many)
-   - Data validation rules
+2. API Endpoint Specifications (CONCRETE and DETAILED for each endpoint)
+   Generate CONCRETE, PRODUCTION-READY API endpoints based on the use cases.
+   For EACH endpoint, provide:
+   - Full endpoint URL with path parameters (e.g., POST /api/v1/todos/{id}/complete)
+   - HTTP method (GET, POST, PUT, DELETE, PATCH)
+   - Use Case(s) supported (which use cases this API supports)
+   - Detailed description and purpose (what business function it serves)
+   - Authentication and authorization requirements (specific roles/permissions needed)
+   - Path parameters (name, type, description, validation rules, examples)
+   - Query parameters (name, type, description, default values, validation, examples)
+   - Request body schema (complete JSON schema with all fields, types, constraints, examples)
+   - Response schemas (200 success, 201 created, 400 bad request, 401 unauthorized, 404 not found, 422 validation error, 500 error)
+   - Error response formats (detailed error codes, messages, error object structure)
+   - Rate limiting and throttling (specific limits: e.g., 100 requests/minute per user)
+   - Request/response headers (required and optional headers with examples)
+   - Content-Type and Accept headers (application/json, etc.)
+   - Pagination details (if applicable: page size, cursor-based vs offset-based, max page size)
+   - Filtering and sorting options (available filters, sort fields, operators, examples)
+   - API versioning strategy (how versions are handled)
+   
+   IMPORTANT: Generate ALL endpoints needed to support the use cases. Include:
+   - CRUD operations for all main entities
+   - Search and query endpoints
+   - Bulk operations if needed
+   - Status update endpoints
+   - Any specialized endpoints for business workflows
 
-3. Database Schema Design
-   - Table definitions with detailed column specifications
-   - Indexes for performance optimization
-   - Constraints (NOT NULL, UNIQUE, CHECK, FOREIGN KEY)
-   - Normalization approach (justify normalization level)
-   - Data types chosen and rationale
+3. Data Models (COMPREHENSIVE)
+   - Entity-relationship diagrams (detailed text description for diagram generation)
+   - Complete database tables with:
+     * Column names, data types, sizes, precision
+     * NOT NULL constraints
+     * DEFAULT values
+     * UNIQUE constraints
+     * CHECK constraints
+     * Column descriptions and business meaning
+   - Primary keys (single or composite, rationale)
+   - Foreign keys (referenced tables, ON DELETE/UPDATE actions)
+   - Indexes (all indexes: primary, foreign key, unique, composite, covering indexes)
+   - Relationships (detailed: one-to-one, one-to-many, many-to-many with cardinality)
+   - Data validation rules (field-level and cross-field validations)
+   - Enumerations (all enum types with allowed values)
+   - Data constraints and business rules
 
-4. API Request/Response Examples
-   - Example requests for each endpoint
-   - Example responses (success and error cases)
-   - Status codes for different scenarios
-   - Pagination, filtering, sorting examples
+4. Database Schema Design (DETAILED SQL-like definitions)
+   - Complete table definitions (CREATE TABLE statements with all constraints)
+   - Column specifications (data type, size, nullable, default, check constraints)
+   - Indexes for performance (all indexes with columns, type, purpose)
+   - Constraints (NOT NULL, UNIQUE, CHECK, FOREIGN KEY with full definitions)
+   - Normalization approach (normal form achieved, justification, denormalization if any)
+   - Data types chosen and rationale (why VARCHAR(255) vs TEXT, INT vs BIGINT, etc.)
+   - Sequences or auto-increment strategies
+   - Triggers (if applicable: what triggers, when, what they do)
+   - Views (if applicable: view definitions and purposes)
+   - Stored procedures (if applicable: procedures, functions, their purposes)
 
-5. Data Validation Rules
-   - Input validation requirements
-   - Business rule validations
-   - Data format constraints
-   - Error messages for validation failures
+5. API Request/Response Examples (COMPLETE examples for each endpoint)
+   For EACH endpoint, provide complete, copy-paste ready examples:
+   - Example requests (complete curl commands with all headers, authentication tokens)
+   - Example responses (success cases: 200, 201 with full JSON payloads)
+   - Error response examples (400, 401, 404, 422, 500 with error details)
+   - Status codes for all scenarios (all possible status codes per endpoint)
+   - Pagination examples (first page, last page, empty results, with pagination metadata)
+   - Filtering examples (single filter, multiple filters, complex queries with operators)
+   - Sorting examples (single field, multiple fields, ascending/descending)
+   - Request validation examples (valid requests, invalid requests with error details)
+   - Use case flow examples (complete API call sequences for each use case)
+   
+   Format examples as:
+   ```bash
+   # Use Case: UC-001 - Create Todo Item
+   curl -X POST https://api.example.com/api/v1/todos \\
+     -H "Authorization: Bearer {token}" \\
+     -H "Content-Type: application/json" \\
+     -d '{{"title": "Buy groceries", "description": "Milk, eggs, bread", "due_date": "2024-01-15"}}'
+   ```
+   
+   Include at least 2-3 examples per endpoint showing different scenarios.
 
-6. Integration Points
-   - External API integrations (if any)
-   - Message queue schemas (if applicable)
-   - Event payload structures (if applicable)
-   - Third-party service contracts
+6. Data Validation Rules (COMPREHENSIVE)
+   - Input validation requirements (field-by-field validation rules)
+   - Business rule validations (cross-field validations, business logic constraints)
+   - Data format constraints (regex patterns, format requirements, examples)
+   - Error messages for validation failures (specific error messages per validation rule)
+   - Validation order and dependencies
+   - Custom validation logic (complex validations that require business logic)
+   - Sanitization requirements (input sanitization, SQL injection prevention, XSS prevention)
+
+7. Integration Points (DETAILED)
+   - External API integrations (complete API contracts, authentication, rate limits)
+   - Message queue schemas (if applicable: queue names, message formats, routing keys)
+   - Event payload structures (if applicable: event types, schemas, consumers)
+   - Third-party service contracts (service names, endpoints, authentication, SLAs)
+   - Webhook configurations (if applicable: endpoints, payloads, retry logic)
+   - Integration patterns (synchronous, asynchronous, polling, webhooks)
+   - Error handling for integrations (retry logic, circuit breakers, fallbacks)
+
+8. Business Logic Details and Use Case Implementation
+   - Use Case Implementation Details:
+     * For each use case, describe how it's implemented via APIs
+     * Step-by-step API call sequence for each use case flow
+     * State changes that occur during use case execution
+     * Data validation and business rules applied
+   - Core business workflows (step-by-step workflows for key operations with API calls)
+   - State machines (if applicable: states, transitions, triggers, API endpoints that trigger transitions)
+   - Business rules (all business rules with conditions and actions, which APIs enforce them)
+   - Calculation logic (formulas, algorithms, examples, which APIs perform calculations)
+   - Workflow diagrams (text descriptions for diagram generation showing API interactions)
+   - Use Case to API Traceability:
+     * Matrix showing which APIs support which use cases
+     * Coverage analysis (ensure all use cases have supporting APIs)
+     * API dependencies for complex use cases
+
+9. Error Handling and Edge Cases
+   - Error scenarios (all possible error conditions)
+   - Error handling strategy (how each error type is handled)
+   - Edge cases (boundary conditions, unusual scenarios)
+   - Failure modes (what happens when components fail)
+   - Retry logic (when to retry, how many times, backoff strategy)
 
 Format as structured markdown with clear sections and subsections.
-Be specific and detailed - this will be used for implementation.
-Include concrete examples and schemas that developers can use directly.
+
+CRITICAL REQUIREMENTS:
+1. Generate CONCRETE, SPECIFIC API endpoints - not generic placeholders
+   - Use actual endpoint paths like: POST /api/v1/todos, GET /api/v1/todos/{id}
+   - Base URL: https://api.example.com (or derive from project brief)
+   - API version: /api/v1/ (or appropriate versioning strategy)
+
+2. Connect EVERY API to use cases:
+   - Each API must specify which use case(s) it supports
+   - Show complete API call sequences for each use case
+   - Ensure all use cases from HLD have supporting APIs
+
+3. Provide production-ready specifications:
+   - Complete JSON schemas with all fields, types, constraints
+   - Realistic example values (not just "string", "integer")
+   - Complete curl commands that can be copy-pasted and tested
+   - All possible status codes and error responses
+
+4. Be EXTREMELY specific and detailed:
+   - Include concrete, copy-paste ready examples that developers can use directly
+   - Every endpoint should have complete documentation
+   - Every table should have full schema definitions
+   - Every use case should have a clear API implementation path
+
+Aim for 4000-5000 words with substantial detail in each section.
+The document should be comprehensive enough for developers to implement the system directly.
 """
         return prompt
     
