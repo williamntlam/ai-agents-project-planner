@@ -71,10 +71,10 @@ agent_app/
 ├── agents/                 # Specialized agent classes
 │   ├── __init__.py
 │   ├── base.py            # BaseAgent abstract class
-│   ├── system_architect.py
-│   ├── api_data.py
-│   ├── reviewer.py
-│   └── writer_formatter.py
+│   ├── system_architect_agent.py
+│   ├── api_data_agent.py
+│   ├── reviewer_agent.py
+│   └── writer_formatter_agent.py
 ├── orchestration/          # LangGraph workflow
 │   ├── __init__.py
 │   ├── graph.py           # LangGraph definition
@@ -486,7 +486,7 @@ class MCPTools:
 ## Phase 6: Specialized Agents
 
 ### 6.1 System Architect Agent
-**Implement:** `agents/system_architect.py`
+**Implement:** `agents/system_architect_agent.py`
 
 **Responsibility:** High-Level Design (HLD), Component structure, Technology Rationale.
 
@@ -565,7 +565,7 @@ Format as structured markdown.
 ```
 
 ### 6.2 API Data Agent
-**Implement:** `agents/api_data.py`
+**Implement:** `agents/api_data_agent.py`
 
 **Responsibility:** Low-Level Design (LLD), Data Models, API Endpoints, Database Schemas.
 
@@ -625,7 +625,7 @@ class APIDataAgent(BaseAgent):
 ```
 
 ### 6.3 Reviewer Agent
-**Implement:** `agents/reviewer.py`
+**Implement:** `agents/reviewer_agent.py`
 
 **Responsibility:** Quality Assurance, Validation, and Self-Correction loop initiation.
 
@@ -735,7 +735,7 @@ Return as JSON.
 ```
 
 ### 6.4 Writer Formatter Agent
-**Implement:** `agents/writer_formatter.py`
+**Implement:** `agents/writer_formatter_agent.py`
 
 **Responsibility:** Final document assembly, Markdown formatting, and rendering Mermaid code blocks.
 
@@ -841,10 +841,10 @@ class GraphState(TypedDict):
 ```python
 from langgraph.graph import StateGraph, END
 from agent_app.orchestration.state import GraphState
-from agent_app.agents.system_architect import SystemArchitectAgent
-from agent_app.agents.api_data import APIDataAgent
-from agent_app.agents.reviewer import ReviewerAgent
-from agent_app.agents.writer_formatter import WriterFormatterAgent
+from agent_app.agents.system_architect_agent import SystemArchitectAgent
+from agent_app.agents.api_data_agent import APIDataAgent
+from agent_app.agents.reviewer_agent import ReviewerAgent
+from agent_app.agents.writer_formatter_agent import WriterFormatterAgent
 from agent_app.orchestration.edges import should_revise, check_hitl
 
 def create_workflow_graph(agents: Dict[str, BaseAgent], config: Dict) -> StateGraph:
@@ -1020,10 +1020,10 @@ import click
 import yaml
 from pathlib import Path
 from agent_app.orchestration.graph import create_workflow_graph
-from agent_app.agents.system_architect import SystemArchitectAgent
-from agent_app.agents.api_data import APIDataAgent
-from agent_app.agents.reviewer import ReviewerAgent
-from agent_app.agents.writer_formatter import WriterFormatterAgent
+from agent_app.agents.system_architect_agent import SystemArchitectAgent
+from agent_app.agents.api_data_agent import APIDataAgent
+from agent_app.agents.reviewer_agent import ReviewerAgent
+from agent_app.agents.writer_formatter_agent import WriterFormatterAgent
 from agent_app.tools.rag_tool import RAGTool
 from agent_app.tools.mcp_tools import MCPTools
 from agent_app.schemas.document_state import DocumentState
@@ -1116,7 +1116,7 @@ if __name__ == '__main__':
 ### 10.3 Example Test
 ```python
 import pytest
-from agent_app.agents.system_architect import SystemArchitectAgent
+from agent_app.agents.system_architect_agent import SystemArchitectAgent
 from agent_app.schemas.document_state import DocumentState
 
 def test_system_architect_agent():
@@ -1840,7 +1840,7 @@ from agent_app.evals.functional.structure_eval import StructureEval
 from agent_app.evals.functional.schema_eval import SchemaEval
 from agent_app.evals.quality.coherence_eval import CoherenceEval
 from agent_app.evals.end_to_end.workflow_eval import WorkflowEval
-from agent_app.agents.system_architect import SystemArchitectAgent
+from agent_app.agents.system_architect_agent import SystemArchitectAgent
 from agent_app.schemas.agent_output import AgentOutput
 from agent_app.schemas.document_state import DocumentState
 import json
