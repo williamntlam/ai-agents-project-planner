@@ -37,7 +37,7 @@ class DatabaseDesignerAgent(BaseAgent):
         """
         model = self.get_config_value('model', 'gpt-4o-mini')
         temperature = self.get_config_value('temperature', 0.5)  # Lower for precise schemas
-        max_tokens = self.get_config_value('max_tokens', 8000)
+        max_tokens = self.get_config_value('max_tokens', 6000)  # Reduced to fit within 8192 token limit
         
         # Get API key from config or environment variable
         api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')

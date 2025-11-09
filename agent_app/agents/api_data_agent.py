@@ -34,7 +34,7 @@ class APIDataAgent(BaseAgent):
         """
         model = self.get_config_value('model', 'gpt-4o-mini')
         temperature = self.get_config_value('temperature', 0.7)
-        max_tokens = self.get_config_value('max_tokens', 8000)  # Increased for more detailed output
+        max_tokens = self.get_config_value('max_tokens', 6000)  # Reduced to fit within 8192 token limit
         
         # Get API key from config or environment variable
         api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')
@@ -321,7 +321,7 @@ Generate a comprehensive and DETAILED LLD with extensive depth:
    # Security: Requires JWT token, rate limit: 50 req/min
    # Performance: Uses primary database, expected response: <200ms
    curl -X POST https://api.example.com/api/v1/todos \\
-     -H "Authorization: Bearer {token}" \\
+     -H "Authorization: Bearer {{token}}" \\
      -H "Content-Type: application/json" \\
      -d '{{"title": "Buy groceries", "description": "Milk, eggs, bread", "due_date": "2024-01-15"}}'
    ```
