@@ -845,7 +845,7 @@ from agent_app.agents.system_architect_agent import SystemArchitectAgent
 from agent_app.agents.api_data_agent import APIDataAgent
 from agent_app.agents.reviewer_agent import ReviewerAgent
 from agent_app.agents.writer_formatter_agent import WriterFormatterAgent
-from agent_app.orchestration.edges import should_revise, check_hitl
+from agent_app.orchestration.graph_edges import should_revise, check_hitl
 
 def create_workflow_graph(agents: Dict[str, BaseAgent], config: Dict) -> StateGraph:
     """
