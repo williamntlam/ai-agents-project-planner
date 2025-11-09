@@ -7,6 +7,7 @@ from pathlib import Path
 from agent_app.orchestration.graph import create_workflow_graph
 from agent_app.agents.system_architect_agent import SystemArchitectAgent
 from agent_app.agents.api_data_agent import APIDataAgent
+from agent_app.agents.database_designer_agent import DatabaseDesignerAgent
 from agent_app.agents.reviewer_agent import ReviewerAgent
 from agent_app.agents.writer_formatter_agent import WriterFormatterAgent
 from agent_app.tools.rag_tool import RAGTool
@@ -137,6 +138,10 @@ def main(brief: str, config: str, output: str, verbose: bool):
             ),
             'api_data': APIDataAgent(
                 config_data['agents']['api_data'],
+                tools
+            ),
+            'database_designer': DatabaseDesignerAgent(
+                config_data['agents'].get('database_designer', config_data['agents']['api_data']),  # Fallback to api_data config if not specified
                 tools
             ),
             'reviewer': ReviewerAgent(

@@ -56,6 +56,13 @@ def _run_agent(agent: BaseAgent, graph_state: GraphState) -> GraphState:
         # Store sources if available
         if output.sources:
             document_state.retrieved_context = output.sources
+    
+    elif agent_name == "DatabaseDesignerAgent":
+        # Update database schema
+        document_state.database_schema = output.content
+        # Store sources if available
+        if output.sources:
+            document_state.retrieved_context = output.sources
         
     elif agent_name == "ReviewerAgent":
         # Parse review feedback JSON
@@ -99,12 +106,13 @@ def create_workflow_graph(agents: Dict[str, BaseAgent], config: Dict) -> StateGr
     Workflow:
     1. draft_hld (SystemArchitectAgent)
     2. draft_lld (APIDataAgent)
-    3. review_doc (ReviewerAgent)
-    4. should_revise? (conditional edge)
+    3. design_database (DatabaseDesignerAgent)
+    4. review_doc (ReviewerAgent)
+    5. should_revise? (conditional edge)
        - Yes → draft_hld (loop back)
        - No → format_doc (WriterFormatterAgent)
-    5. human_review (HITL checkpoint)
-    6. END
+    6. human_review (HITL checkpoint)
+    7. END
     
     Args:
         agents: Dictionary of agent instances keyed by name
@@ -120,13 +128,15 @@ def create_workflow_graph(agents: Dict[str, BaseAgent], config: Dict) -> StateGr
     # Add nodes
     workflow.add_node("draft_hld", lambda state: _run_agent(agents['system_architect'], state))
     workflow.add_node("draft_lld", lambda state: _run_agent(agents['api_data'], state))
+    workflow.add_node("design_database", lambda state: _run_agent(agents['database_designer'], state))
     workflow.add_node("review_doc", lambda state: _run_agent(agents['reviewer'], state))
     workflow.add_node("format_doc", lambda state: _run_agent(agents['writer_formatter'], state))
     
     # Add edges
     workflow.set_entry_point("draft_hld")
     workflow.add_edge("draft_hld", "draft_lld")
-    workflow.add_edge("draft_lld", "review_doc")
+    workflow.add_edge("draft_lld", "design_database")
+    workflow.add_edge("design_database", "review_doc")
     
     # Conditional edge: should we revise?
     workflow.add_conditional_edges(

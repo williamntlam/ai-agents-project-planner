@@ -231,47 +231,118 @@ Generate a comprehensive and DETAILED HLD with extensive depth in each section:
 
 3. Technology Stack (with detailed rationale)
    - Programming languages and frameworks (specific versions, why chosen, alternatives considered)
+     * Use Case Connections: How technology choice supports use cases (e.g., "Python chosen for UC-001 rapid development")
    - Databases and data storage (specific database choice, schema approach, replication strategy)
+     * Use Case Connections: Database features used per use case (e.g., "UC-001 uses PostgreSQL JSONB for flexible schema")
    - Message queues/event streaming (if applicable - specific technologies, patterns, use cases)
+     * Use Case Connections: Which use cases use message queues (e.g., "UC-003: Bulk operations use RabbitMQ")
    - Infrastructure and deployment tools (specific tools, CI/CD pipeline, container orchestration)
+     * Use Case Connections: How infrastructure supports use case requirements
    - Monitoring and observability tools (logging, metrics, tracing solutions)
+     * Use Case Connections: What's monitored per use case, tracing per use case flow
    - Security tools and libraries (authentication libraries, encryption tools)
+     * Use Case Connections: Security libraries used per use case
    - Justify each choice with specific requirements and trade-offs considered
+     * Connect each technology choice to use case requirements
    - Include version numbers and specific technology names where applicable
 
 4. High-level Data Flow
    - Detailed data flow diagrams description (step-by-step flow for key operations)
    - How data moves through the system (request/response flows, data transformation points)
+   - Layer Responsibilities (for each layer, specify what it does):
+     * API Layer: Request validation, authentication, input sanitization, response formatting
+     * Business Logic Layer: Business rule validation, state management, workflow orchestration, calculations
+     * Data Access/Repository Layer: Database queries, data persistence, transaction management
    - Key data transformations (what transformations occur, where, and why)
    - Data storage locations (where different types of data are stored and why)
    - Data lifecycle (creation, updates, archival, deletion policies)
-   - Data consistency patterns (eventual consistency, strong consistency, where applied)
-   - Caching layers and strategies (what's cached, where, TTL strategies)
+   - Data consistency patterns (eventual consistency, strong consistency, where applied, which use cases require each pattern)
+   - Caching layers and strategies:
+     * What's cached (specific data types, entities, query results)
+     * Where caching is applied (which components, which APIs)
+     * TTL strategies (time-to-live for different cache entries)
+     * Cache invalidation strategies
+     * Use Case Connections: For each caching strategy, specify:
+       - Which use cases benefit from this caching (e.g., "UC-001: View Todo List benefits from caching frequently accessed todos")
+       - Where in the use case flow caching is applied
+       - Performance impact on use case execution (e.g., "Reduces response time from 200ms to 50ms for UC-001")
+       - Cache hit/miss scenarios for each use case
 
 5. Scalability and Performance Considerations
    - Expected load (specific numbers: requests per second, concurrent users, data volume)
+     * Break down by use case: "UC-001 expected 1000 req/min, UC-002 expected 500 req/min"
    - Scaling strategy (horizontal vs vertical, auto-scaling rules, scaling triggers)
+     * Use Case Connections: Which use cases drive scaling needs
+     * Scaling triggers based on use case patterns (e.g., "Scale up during UC-003 bulk operations")
    - Performance requirements (specific SLAs: response times, throughput, availability targets)
+     * Per-use-case SLAs: "UC-001 must respond in <200ms, UC-002 in <500ms"
    - Caching strategies (detailed caching approach: what, where, when, invalidation)
+     * Use Case Connections: For EACH caching strategy, specify:
+       - Which use cases use this cache (e.g., "UC-001: List Todos uses Redis cache for todo items")
+       - Cache key strategy per use case
+       - Cache invalidation triggers from use cases (e.g., "UC-004: Update Todo invalidates cache")
+       - Expected cache hit rate per use case
+       - Performance improvement per use case (e.g., "UC-001: 80% cache hit rate reduces DB load by 80%")
    - Database scaling approach (read replicas, sharding strategy, partitioning)
+     * Use Case Connections: Which use cases use read replicas vs primary (e.g., "UC-001 uses read replica, UC-003 uses primary")
    - Load balancing strategy (algorithm, health checks, failover)
+     * Use Case Connections: How load balancing affects each use case
    - Performance bottlenecks and mitigation (identify potential bottlenecks and solutions)
+     * Per-use-case bottleneck analysis: "UC-002 may bottleneck on database writes, mitigated by..."
    - Capacity planning (resource requirements, growth projections)
+     * Per-use-case capacity needs: "UC-001 requires X resources, UC-002 requires Y resources"
 
 6. Security Considerations
    - Authentication and authorization approach (detailed auth flow, token management, session handling)
-   - Data protection and encryption (encryption at rest and in transit, key management)
+     * Use Case Connections: For each use case, specify:
+       - Authentication requirements (e.g., "UC-001 requires JWT token, UC-002 requires OAuth")
+       - Authorization checks (e.g., "UC-003: Update Todo requires user to own the todo")
+       - Security flow in use case execution
+   - Data protection and encryption (SPECIFIC industry-standard algorithms):
+     * Data at Rest Encryption:
+       - Algorithm: AES-256-GCM (Advanced Encryption Standard with Galois/Counter Mode)
+       - Key Management: AWS KMS, Azure Key Vault, or HashiCorp Vault
+       - Key Rotation: Every 90 days
+     * Data in Transit Encryption:
+       - Protocol: TLS 1.3 (Transport Layer Security version 1.3)
+       - Cipher Suites: TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256
+       - Certificate Management: Use valid SSL/TLS certificates from trusted CAs
+     * Password Hashing:
+       - Algorithm: bcrypt with cost factor 12+ or Argon2id
+       - Salt: Automatically generated, unique per password
+     * Use Case Connections: Which use cases handle sensitive data requiring encryption
+     * Encryption applied per use case (e.g., "UC-004: Create Todo encrypts PII fields using AES-256-GCM")
    - API security (rate limiting, input validation, CORS, API keys)
+     * Use Case Connections: Rate limits per use case (e.g., "UC-001: 100 req/min per user, UC-002: 50 req/min")
+     * Input validation requirements per use case
    - Compliance requirements (GDPR, HIPAA, PCI-DSS if applicable)
+     * Use Case Connections: Which use cases handle regulated data
+     * Compliance measures per use case
    - Security monitoring and incident response (logging, alerting, response procedures)
+     * Use Case Connections: Security events to monitor per use case
+     * Alert triggers based on use case patterns
    - Access control model (RBAC, ABAC, or other - with detailed explanation)
+     * Use Case Connections: Role requirements per use case (e.g., "UC-001: User role, UC-005: Admin role")
+     * Permission matrix: Use Case → Required Permissions
    - Security best practices implementation (OWASP top 10 mitigation, secure coding practices)
+     * Use Case Connections: Security measures applied per use case
+     * Threat mitigation per use case (e.g., "UC-002: SQL injection prevention via parameterized queries")
 
 7. Reliability and Fault Tolerance
    - Error handling strategy (how errors are handled, retry logic, circuit breakers)
+     * Use Case Connections: Error handling per use case
+     * Retry logic per use case (e.g., "UC-001: Retry 3 times with exponential backoff")
+     * Circuit breaker triggers based on use case failure patterns
    - Disaster recovery (backup strategies, RTO/RPO targets, recovery procedures)
+     * Use Case Connections: RTO/RPO requirements per use case (e.g., "UC-001: RTO 1 hour, UC-002: RTO 4 hours")
+     * Recovery procedures per use case
    - High availability design (redundancy, failover mechanisms, health checks)
+     * Use Case Connections: Availability requirements per use case (e.g., "UC-001: 99.9% uptime, UC-002: 99.5%")
+     * Failover behavior per use case
    - Monitoring and alerting (what's monitored, alert thresholds, escalation procedures)
+     * Use Case Connections: Metrics to monitor per use case
+     * Alert thresholds per use case (e.g., "UC-001: Alert if response time > 500ms")
+     * Use case health indicators
 
 Format as structured markdown with clear sections and subsections.
 Be EXTREMELY specific and detailed - provide concrete examples, specific technologies, and actionable details.

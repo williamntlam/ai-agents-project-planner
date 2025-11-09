@@ -309,10 +309,17 @@ Generate a comprehensive and DETAILED LLD with extensive depth:
    - Sorting examples (single field, multiple fields, ascending/descending)
    - Request validation examples (valid requests, invalid requests with error details)
    - Use case flow examples (complete API call sequences for each use case)
+   - Technical Strategy Connections: For each example, note:
+     * Caching: "This endpoint uses Redis cache (TTL: 5min) - see Caching Strategy section"
+     * Security: "This endpoint requires JWT token and rate limiting (100 req/min) - see Security section"
+     * Performance: "This endpoint uses read replica for queries - see Scalability section"
    
    Format examples as:
    ```bash
    # Use Case: UC-001 - Create Todo Item
+   # Caching: Not applicable (write operation)
+   # Security: Requires JWT token, rate limit: 50 req/min
+   # Performance: Uses primary database, expected response: <200ms
    curl -X POST https://api.example.com/api/v1/todos \\
      -H "Authorization: Bearer {token}" \\
      -H "Content-Type: application/json" \\
@@ -339,23 +346,170 @@ Generate a comprehensive and DETAILED LLD with extensive depth:
    - Integration patterns (synchronous, asynchronous, polling, webhooks)
    - Error handling for integrations (retry logic, circuit breakers, fallbacks)
 
-8. Business Logic Details and Use Case Implementation
-   - Use Case Implementation Details:
-     * For each use case, describe how it's implemented via APIs
-     * Step-by-step API call sequence for each use case flow
-     * State changes that occur during use case execution
-     * Data validation and business rules applied
-   - Core business workflows (step-by-step workflows for key operations with API calls)
-   - State machines (if applicable: states, transitions, triggers, API endpoints that trigger transitions)
-   - Business rules (all business rules with conditions and actions, which APIs enforce them)
-   - Calculation logic (formulas, algorithms, examples, which APIs perform calculations)
-   - Workflow diagrams (text descriptions for diagram generation showing API interactions)
-   - Use Case to API Traceability:
-     * Matrix showing which APIs support which use cases
-     * Coverage analysis (ensure all use cases have supporting APIs)
-     * API dependencies for complex use cases
+8. Layer Architecture and Implementation Details
 
-9. Error Handling and Edge Cases
+   8.1 Business Logic Layer
+   For EACH major business operation (connected to use cases and APIs), provide:
+   - Business Logic Function Name and Purpose
+   - Use Case(s) it supports
+   - API Endpoint(s) that call this logic
+   - Input Parameters (with types and validation)
+   - Output/Return Value (with types)
+   - Pseudocode Implementation:
+     * Step-by-step algorithm in clear pseudocode
+     * Decision points and conditional logic
+     * Business rule checks (e.g., "if user.balance >= item.price")
+     * Validation logic
+     * Error conditions and handling
+     * State transitions
+   - Example Pseudocode Format:
+     ```
+     FUNCTION canUserPurchaseItem(user, item, quantity):
+         // Use Case: UC-005 - Purchase Item
+         // API: POST /api/v1/purchases
+         
+         // Step 1: Validate user is active
+         IF user.status != "active":
+             RETURN Error("User account is not active")
+         
+         // Step 2: Check inventory availability
+         available_quantity = repository.getInventory(item.id)
+         IF available_quantity < quantity:
+             RETURN Error("Insufficient inventory")
+         
+         // Step 3: Calculate total price
+         total_price = item.price * quantity
+         
+         // Step 4: Check user balance
+         IF user.balance < total_price:
+             RETURN Error("Insufficient balance")
+         
+         // Step 5: Apply business rules
+         IF item.is_restricted AND user.age < item.min_age:
+             RETURN Error("User does not meet age requirement")
+         
+         // Step 6: Process purchase
+         RETURN Success(purchase_data)
+     ```
+   
+   Include pseudocode for ALL major business operations:
+   - CRUD operations with business rules
+   - Validation logic
+   - Authorization checks
+   - State transitions
+   - Calculations and computations
+   - Business rule enforcement
+   - Workflow orchestration
+
+   8.2 Data Access Layer (Repository Layer)
+   For EACH repository/DAO, provide:
+   - Repository Interface Name and Purpose
+   - Use Case(s) it supports
+   - API Endpoint(s) that use this repository
+   - Methods with signatures:
+     * Method name, parameters, return type
+     * SQL queries or ORM operations
+     * Database operations (SELECT, INSERT, UPDATE, DELETE)
+     * Transaction handling
+     * Error handling
+   - Example Repository Implementation:
+     ```
+     CLASS TodoRepository:
+         // Use Case: UC-001 - Create Todo
+         // API: POST /api/v1/todos
+         
+         METHOD create(todo_data: TodoCreateRequest) -> Todo:
+             SQL: INSERT INTO todos (title, description, user_id, status, created_at)
+                  VALUES (todo_data.title, todo_data.description, todo_data.user_id, 'pending', NOW())
+             RETURN created_todo
+         
+         // Use Case: UC-002 - List Todos
+         // API: GET /api/v1/todos
+         
+         METHOD findByUserId(user_id: int, filters: Filters, pagination: Pagination) -> List[Todo]:
+             SQL: SELECT * FROM todos 
+                  WHERE user_id = user_id 
+                  AND status = filters.status 
+                  ORDER BY created_at DESC
+                  LIMIT pagination.limit OFFSET pagination.offset
+             RETURN todo_list
+         
+         METHOD findById(todo_id: int) -> Todo:
+             SQL: SELECT * FROM todos WHERE id = todo_id
+             IF NOT FOUND:
+                 THROW NotFoundError("Todo not found")
+             RETURN todo
+     ```
+   
+   Include repository methods for:
+   - All CRUD operations
+   - Query methods (findBy, search, filter)
+   - Complex queries (joins, aggregations)
+   - Transaction management
+   - Database connection handling
+
+   8.3 API Layer to Business Logic to Repository Flow
+   For EACH API endpoint, show the complete flow:
+   - API Endpoint receives request
+   - API Layer responsibilities:
+     * Request validation (format, required fields)
+     * Authentication/authorization check
+     * Input sanitization
+     * Error response formatting
+   - Business Logic Layer responsibilities:
+     * Business rule validation
+     * State management
+     * Workflow orchestration
+     * Business calculations
+   - Repository Layer responsibilities:
+     * Database queries
+     * Data persistence
+     * Transaction management
+   - Example Complete Flow:
+     ```
+     API: POST /api/v1/todos
+     Use Case: UC-001 - Create Todo
+     
+     1. API Layer (TodoController.create):
+        - Validate request body (title required, max length 200)
+        - Extract JWT token, validate user authentication
+        - Call: business_logic.createTodo(user_id, todo_data)
+     
+     2. Business Logic Layer (TodoService.createTodo):
+        - Check user exists and is active
+        - Validate business rules (e.g., max todos per user = 100)
+        - Create todo object with default values
+        - Call: repository.create(todo_object)
+        - Return created todo
+     
+     3. Repository Layer (TodoRepository.create):
+        - Execute SQL INSERT
+        - Handle database errors
+        - Return persisted todo
+     
+     4. Business Logic Layer returns result
+     5. API Layer formats response (201 Created with todo data)
+     ```
+   
+   Provide this flow for ALL major API endpoints.
+
+9. Business Logic Details and Use Case Implementation
+   - Use Case Implementation Details:
+     * For each use case, describe how it's implemented via APIs → Business Logic → Repository
+     * Step-by-step flow through all layers
+     * State changes that occur during use case execution
+     * Data validation and business rules applied at each layer
+   - Core business workflows (step-by-step workflows for key operations with layer interactions)
+   - State machines (if applicable: states, transitions, triggers, which layer handles transitions)
+   - Business rules (all business rules with conditions and actions, which layer enforces them)
+   - Calculation logic (formulas, algorithms, examples, which layer performs calculations)
+   - Workflow diagrams (text descriptions for diagram generation showing layer interactions)
+   - Use Case to API Traceability:
+     * Matrix showing: Use Case → API → Business Logic → Repository
+     * Coverage analysis (ensure all use cases have complete implementation)
+     * Layer dependencies for complex use cases
+
+10. Error Handling and Edge Cases
    - Error scenarios (all possible error conditions)
    - Error handling strategy (how each error type is handled)
    - Edge cases (boundary conditions, unusual scenarios)

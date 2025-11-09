@@ -125,10 +125,10 @@ class WriterFormatterAgent(BaseAgent):
     
     def _combine_documents(self, state: DocumentState) -> str:
         """
-        Combine HLD and LLD into a single document.
+        Combine HLD, LLD, and Database Schema into a single document.
         
         Args:
-            state: Document state with hld_draft and lld_draft
+            state: Document state with hld_draft, lld_draft, and database_schema
             
         Returns:
             Combined document string
@@ -143,6 +143,11 @@ class WriterFormatterAgent(BaseAgent):
         if state.lld_draft:
             parts.append("# Low-Level Design\n\n")
             parts.append(state.lld_draft)
+            parts.append("\n\n")
+        
+        if state.database_schema:
+            parts.append("# Database Schema Design\n\n")
+            parts.append(state.database_schema)
         
         return "\n".join(parts)
     
@@ -278,7 +283,9 @@ Document Content:
 Generate appropriate Mermaid diagrams:
 1. Architecture Diagram: Show component relationships and interactions
 2. Data Flow Diagram: Show how data moves through the system
-3. Database Schema Diagram: Show entity relationships (if applicable)
+3. Database Schema Diagram (ERD): Show entity relationships using erDiagram syntax
+   - Include all entities, relationships, and cardinality
+   - Format: Use Mermaid erDiagram syntax with proper relationship notation
 
 Insert the diagrams as code blocks with ```mermaid markers in appropriate sections.
 
@@ -347,16 +354,21 @@ graph TD
         - project_brief (always required)
         - hld_draft (required)
         - lld_draft (required)
+        - database_schema (required)
         """
         is_valid, errors = super().validate_state(state)
         
-        # WriterFormatterAgent requires both drafts
+        # WriterFormatterAgent requires all drafts
         if not state.hld_draft or len(state.hld_draft.strip()) < 100:
             errors.append("hld_draft is required and must be at least 100 characters")
             is_valid = False
         
         if not state.lld_draft or len(state.lld_draft.strip()) < 100:
             errors.append("lld_draft is required and must be at least 100 characters")
+            is_valid = False
+        
+        if not state.database_schema or len(state.database_schema.strip()) < 100:
+            errors.append("database_schema is required and must be at least 100 characters")
             is_valid = False
         
         return is_valid, errors
