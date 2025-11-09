@@ -89,23 +89,17 @@ class RetrievalUtility:
                 )
             query_embedding = self.embedder.embed(query_text)
         
-        # Get results from vector loader (uses cosine similarity)
-        chunks = self.vector_loader.get_best_matches(
+        # Get results from vector loader (returns tuples of (Chunk, similarity_score))
+        chunk_results = self.vector_loader.get_best_matches(
             query_embedding=query_embedding,
             top_k=top_k * 2 if min_similarity else top_k,  # Get more if filtering by similarity
             filters=filters
         )
         
         # Convert to SearchResult objects with similarity scores
+        # Similarity is already calculated in SQL and returned by get_best_matches
         results = []
-        for i, chunk in enumerate(chunks):
-            # Calculate similarity score (vector_loader uses cosine)
-            similarity = self._calculate_similarity(
-                query_embedding,
-                chunk.embedding,
-                similarity_metric
-            )
-            
+        for i, (chunk, similarity) in enumerate(chunk_results):
             # Filter by minimum similarity if specified
             if min_similarity is not None and similarity < min_similarity:
                 continue
@@ -440,9 +434,12 @@ def search_with_filters(
         filters["tags"] = tags[0] if tags else None
     filters.update(kwargs)
     
-    return vector_loader.get_best_matches(
+    # get_best_matches now returns List[Tuple[Chunk, float]]
+    # Extract just the chunks for backward compatibility
+    chunk_results = vector_loader.get_best_matches(
         query_embedding=query_embedding,
         top_k=top_k,
         filters=filters if filters else None
     )
+    return [chunk for chunk, _ in chunk_results]
 

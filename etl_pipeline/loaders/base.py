@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from etl_pipeline.models.chunk import Chunk
 from etl_pipeline.models.document import Document
 
@@ -86,7 +86,7 @@ class BaseVectorLoader(BaseLoader):
         query_embedding: List[float], 
         top_k: int = 25,
         filters: Optional[dict] = None
-    ) -> List[Chunk]:
+    ) -> List[Tuple[Chunk, float]]:
         """
         Retrieve top-K most similar chunks.
         
@@ -96,7 +96,8 @@ class BaseVectorLoader(BaseLoader):
             filters: Optional metadata filters (e.g., {"category": "security"})
         
         Returns:
-            List[Chunk]: Top-K most similar chunks, sorted by similarity
+            List[Tuple[Chunk, float]]: Top-K most similar chunks with similarity scores,
+                sorted by similarity (highest first). Each tuple contains (Chunk, similarity_score).
         """
         pass
     

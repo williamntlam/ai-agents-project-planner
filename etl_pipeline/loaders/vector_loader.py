@@ -3,7 +3,7 @@
 import os
 import json
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from uuid import UUID
 from datetime import datetime, UTC
 
@@ -453,7 +453,7 @@ class PgVectorLoader(BaseVectorLoader):
         query_embedding: List[float],
         top_k: int = 25,
         filters: Optional[dict] = None
-    ) -> List[Chunk]:
+    ) -> List[Tuple[Chunk, float]]:
         """
         Retrieve top-K most similar chunks using cosine similarity.
         
@@ -463,7 +463,8 @@ class PgVectorLoader(BaseVectorLoader):
             filters: Optional metadata filters (e.g., {"category": "security"})
         
         Returns:
-            List[Chunk]: Top-K most similar chunks, sorted by similarity (highest first)
+            List[Tuple[Chunk, float]]: Top-K most similar chunks with similarity scores,
+                sorted by similarity (highest first). Each tuple contains (Chunk, similarity_score).
         
         Raises:
             ValidationError: If query_embedding dimension doesn't match
@@ -524,8 +525,8 @@ class PgVectorLoader(BaseVectorLoader):
                 
                 rows = cursor.fetchall()
                 
-                # Convert rows to Chunk objects
-                chunks = []
+                # Convert rows to (Chunk, similarity) tuples
+                results = []
                 for row in rows:
                     chunk_id, doc_id, chunk_idx, content, embedding, metadata, content_hash, created_at, similarity = row
                     
@@ -546,10 +547,11 @@ class PgVectorLoader(BaseVectorLoader):
                         content_hash=content_hash,
                         created_at=created_at
                     )
-                    chunks.append(chunk)
+                    # Return tuple with chunk and similarity score (already calculated in SQL)
+                    results.append((chunk, float(similarity)))
                 
-                logger.info(f"Retrieved {len(chunks)} best matches (top_k={top_k})")
-                return chunks
+                logger.info(f"Retrieved {len(results)} best matches (top_k={top_k})")
+                return results
                 
         except Exception as e:
             raise LoadingError(
