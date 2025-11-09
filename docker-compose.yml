@@ -69,6 +69,44 @@ services:
     # Override command if needed
     # command: ["python", "-m", "etl_pipeline.main", "--env", "prod", "--verbose"]
 
+  # Agent Application
+  agent_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent_app
+    container_name: agent_app
+    restart: "no"  # Don't auto-restart - run manually via docker exec
+    environment:
+      # Database connection
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}@pgvector:5432/${POSTGRES_DB:-vector_db}
+      
+      # OpenAI API key
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # Python settings
+      PYTHONUNBUFFERED: 1
+      PYTHONPATH: /app
+    volumes:
+      # Mount config directory
+      - ./agent_app/config:/app/agent_app/config:ro
+      
+      # Mount output directory (write access)
+      - ./output:/app/output
+      
+      # Mount logs directory (write access)
+      - ./logs:/app/logs
+      
+      # Optional: Mount .env file
+      - ./.env:/app/.env:ro
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    networks:
+      - etl_network
+    # Override command to run agent_app
+    # Example: command: ["python", "main.py", "--brief", "Your project brief", "--verbose"]
+    # Or run interactively: docker exec -it agent_app python main.py --brief "Your brief"
+
 volumes:
   pgvector_data:
     driver: local

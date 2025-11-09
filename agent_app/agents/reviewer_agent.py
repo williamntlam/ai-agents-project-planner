@@ -151,21 +151,25 @@ class ReviewerAgent(BaseAgent):
         temperature = self.get_config_value('temperature', 0.3)  # Lower for consistent reviews
         max_tokens = self.get_config_value('max_tokens', 2000)
         
-        # Get API key from config or environment
-        api_key = self.get_config_value('api_key')
+        # Get API key from config or environment variable
+        api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')
+        
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in config or environment variables")
         
         self.logger.debug(
             "Initializing LLM for review",
             model=model,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            has_api_key=bool(api_key)
         )
         
         return ChatOpenAI(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
-            api_key=api_key
+            api_key=api_key  # Now guaranteed to be a string
         )
     
     def _combine_documents(self, state: DocumentState) -> str:

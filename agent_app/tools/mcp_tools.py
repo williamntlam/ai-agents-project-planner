@@ -103,6 +103,25 @@ class MCPTools:
         try:
             self._ensure_connection()
             
+            # Check if document_chunks table exists
+            with self._connection.cursor() as check_cursor:
+                check_cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'document_chunks'
+                    );
+                """)
+                table_exists = check_cursor.fetchone()[0]
+                
+                if not table_exists:
+                    self.logger.warning("document_chunks table does not exist")
+                    return {
+                        "standards": [],
+                        "patterns": [],
+                        "best_practices": [],
+                        "count": 0
+                    }
+            
             # Build query to find schema standards in document_chunks
             # Filter by metadata indicating schema/standards documents
             # Note: Files in system_design/ and standards/ directories contain relevant content
@@ -151,16 +170,36 @@ class MCPTools:
                 )
             """
             
-            params = []
+            # Add table_name filter if provided
             if table_name:
                 query += " AND (LOWER(content) LIKE %s OR metadata->>'table_name' = %s)"
-                params.extend([f"%{table_name.lower()}%", table_name])
+                query += " ORDER BY created_at DESC LIMIT 50"
+                params = [f"%{table_name.lower()}%", table_name]
+            else:
+                query += " ORDER BY created_at DESC LIMIT 50"
+                params = None  # No parameters needed
             
-            query += " ORDER BY created_at DESC LIMIT 50"
-            
-            with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
+            try:
+                with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                    if params:
+                        cursor.execute(query, params)
+                    else:
+                        cursor.execute(query)
+                    rows = cursor.fetchall()
+            except (IndexError, psycopg2.Error) as e:
+                self.logger.error(
+                    "Error executing schema standards query",
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    table_name=table_name
+                )
+                # Return empty result instead of crashing
+                return {
+                    "standards": [],
+                    "patterns": [],
+                    "best_practices": [],
+                    "count": 0
+                }
             
             # Format results for LLM consumption
             standards = []

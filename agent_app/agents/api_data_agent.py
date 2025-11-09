@@ -1,5 +1,6 @@
 """API Data Agent - Low-Level Design generation."""
 
+import os
 from typing import Dict, Any, List, Tuple, Optional
 from agent_app.agents.base import BaseAgent
 from agent_app.schemas.document_state import DocumentState
@@ -35,21 +36,25 @@ class APIDataAgent(BaseAgent):
         temperature = self.get_config_value('temperature', 0.7)
         max_tokens = self.get_config_value('max_tokens', 4000)
         
-        # Get API key from config or environment
-        api_key = self.get_config_value('api_key')
+        # Get API key from config or environment variable
+        api_key = self.get_config_value('api_key') or os.getenv('OPENAI_API_KEY')
+        
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in config or environment variables")
         
         self.logger.debug(
             "Initializing LLM",
             model=model,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            has_api_key=bool(api_key)
         )
         
         return ChatOpenAI(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
-            api_key=api_key
+            api_key=api_key  # Now guaranteed to be a string
         )
     
     def perform_action(self, state: DocumentState) -> AgentOutput:
