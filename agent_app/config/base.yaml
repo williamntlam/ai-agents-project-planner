@@ -1,6 +1,4 @@
-# Base configuration for Agent Application
-# This file contains default settings that can be overridden by environment-specific configs
-
+# config/base.yaml
 agents:
   system_architect:
     model: "gpt-4"
@@ -23,22 +21,6 @@ agents:
   writer_formatter:
     model: "gpt-4"
     temperature: 0.5
-  
-  security:
-    model: "gpt-4"
-    temperature: 0.5
-    focus_areas: ["authentication", "authorization", "data_protection", "compliance"]
-  
-  documentation:
-    model: "gpt-4"
-    temperature: 0.6
-    include_code_examples: true
-    api_doc_format: "openapi"  # or "swagger", "markdown"
-  
-  performance:
-    model: "gpt-4"
-    temperature: 0.5
-    focus_areas: ["throughput", "latency", "scalability", "caching"]
 
 tools:
   rag_tool:

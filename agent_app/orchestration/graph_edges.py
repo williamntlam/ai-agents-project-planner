@@ -1,6 +1,8 @@
 """Conditional edge logic for LangGraph workflow."""
 
 from agent_app.orchestration.graph_state import GraphState
+from agent_app.schemas.review_feedback import ReviewFeedback
+import json
 
 
 def should_revise(graph_state: GraphState) -> str:
@@ -28,9 +30,6 @@ def check_hitl(graph_state: GraphState) -> GraphState:
     Human-in-the-Loop checkpoint.
     
     Pauses workflow for human approval.
-    
-    TODO: Implement HITL checkpoint
-    See IMPLEMENTATION_GUIDE.md Phase 7.3 for details
     """
     # In LangGraph, this would use a checkpoint/interrupt
     # For now, return state (implementation depends on LangGraph version)
