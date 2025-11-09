@@ -1,7 +1,8 @@
 """LangGraph state definition."""
 
-from typing import TypedDict
 from agent_app.schemas.document_state import DocumentState
+from typing import TypedDict, Annotated
+import operator
 
 
 class GraphState(TypedDict):

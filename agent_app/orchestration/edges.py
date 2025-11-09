@@ -1,6 +1,6 @@
 """Conditional edge logic for LangGraph workflow."""
 
-from agent_app.orchestration.state import GraphState
+from agent_app.orchestration.graph_state import GraphState
 
 
 def should_revise(graph_state: GraphState) -> str:

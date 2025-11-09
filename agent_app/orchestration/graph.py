@@ -2,7 +2,7 @@
 
 from typing import Dict
 from langgraph.graph import StateGraph, END
-from agent_app.orchestration.state import GraphState
+from agent_app.orchestration.graph_state import GraphState
 
 
 def create_workflow_graph(agents: Dict, config: Dict) -> StateGraph:

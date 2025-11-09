@@ -840,7 +840,7 @@ class GraphState(TypedDict):
 
 ```python
 from langgraph.graph import StateGraph, END
-from agent_app.orchestration.state import GraphState
+from agent_app.orchestration.graph_state import GraphState
 from agent_app.agents.system_architect_agent import SystemArchitectAgent
 from agent_app.agents.api_data_agent import APIDataAgent
 from agent_app.agents.reviewer_agent import ReviewerAgent
@@ -915,7 +915,7 @@ def _run_agent(agent: BaseAgent, graph_state: GraphState) -> GraphState:
 **Purpose:** Decision functions for conditional routing.
 
 ```python
-from agent_app.orchestration.state import GraphState
+from agent_app.orchestration.graph_state import GraphState
 from agent_app.schemas.review_feedback import ReviewFeedback
 import json
 
