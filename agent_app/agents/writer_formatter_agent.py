@@ -165,13 +165,16 @@ class WriterFormatterAgent(BaseAgent):
         """
         try:
             # Build prompt for formatting
+            # Use more content but still limit to avoid token issues
+            content_to_format = content[:12000] if len(content) > 12000 else content
+            
             prompt = f"""You are a technical writer specializing in system design documents. Format this document according to the style guide.
 
 Style Guide:
 {style_guide if style_guide else "Use standard markdown formatting with clear sections and subsections."}
 
 Document Content:
-{content[:6000]}  # Limited to avoid token limit issues
+{content_to_format}
 
 Tasks:
 1. Add YAML frontmatter at the beginning with:
@@ -193,7 +196,12 @@ Tasks:
    - Code block formatting
    - List formatting
 
-4. Ensure the document is ready for final use.
+4. CRITICAL: Do NOT use placeholders like "..." or "[content here]" or "TBD". 
+   - If a section has content, include ALL of it in full detail
+   - If a section is missing content, either omit the section header entirely OR provide a brief note explaining what should be there
+   - Never use "..." as a placeholder - it makes the document look incomplete
+
+5. Ensure the document is ready for final use with complete, detailed content in all sections.
 
 Return the complete formatted document with YAML frontmatter at the top.
 Format: YAML frontmatter between --- markers, followed by the formatted markdown content.
@@ -202,7 +210,8 @@ Format: YAML frontmatter between --- markers, followed by the formatted markdown
             messages = [
                 SystemMessage(content="""You are an expert technical writer specializing in system design documents.
 You format documents according to style guides, ensuring consistency, clarity, and proper structure.
-You add appropriate YAML frontmatter and ensure markdown follows best practices."""),
+You add appropriate YAML frontmatter and ensure markdown follows best practices.
+IMPORTANT: Never use placeholders like "..." or "[TBD]" in the document. Include complete, detailed content in all sections, or omit incomplete sections entirely."""),
                 HumanMessage(content=prompt)
             ]
             

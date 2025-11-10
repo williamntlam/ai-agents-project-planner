@@ -188,7 +188,20 @@ def main(brief: str, config: str, output: str, verbose: bool):
     
     # 8. Save output
     output_path = Path(output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Ensure parent directory exists
+    output_dir = output_path.parent
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # Verify directory exists and is writable
+        if not output_dir.exists():
+            raise OSError(f"Directory does not exist after creation: {output_dir}")
+        if not os.access(output_dir, os.W_OK):
+            raise OSError(f"Directory is not writable: {output_dir}")
+        logger.debug(f"Output directory ready: {output_dir}")
+    except Exception as e:
+        logger.error(f"Failed to create or verify output directory: {e}", directory=str(output_dir))
+        click.echo(f"Error: Failed to create output directory: {output_dir} - {e}", err=True)
+        return
     
     final_document = final_state.get('state', {}).final_document
     if not final_document:
@@ -196,8 +209,13 @@ def main(brief: str, config: str, output: str, verbose: bool):
         logger.warning("Workflow completed but no final_document in state")
         return
     
-    with open(output_path, 'w') as f:
-        f.write(final_document)
+    try:
+        with open(output_path, 'w') as f:
+            f.write(final_document)
+    except Exception as e:
+        logger.error(f"Failed to write output file: {e}", file=str(output_path))
+        click.echo(f"Error: Failed to write output file: {e}", err=True)
+        return
     
     logger.info("SDD generated successfully", output=str(output_path))
     click.echo(f"✓ SDD generated successfully: {output_path}")
